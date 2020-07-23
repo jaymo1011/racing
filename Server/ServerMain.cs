@@ -8,13 +8,7 @@ namespace racing.Server
     {
         public ServerMain()
         {
-            Debug.WriteLine("Hi from racing.Server!");
-        }
-
-        [Command("hello_server")]
-        public void HelloServer()
-        {
-            Debug.WriteLine("Sure, hello.");
+            Debug.WriteLine("Racing server loaded!\nLets do this!");
         }
     }
 }
