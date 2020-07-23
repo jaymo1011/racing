@@ -1,6 +1,8 @@
 fx_version 'bodacious'
 game 'gta5'
 
+resource_type 'gametype' { name = 'Racing' }
+
 file 'Client/bin/Release/**/publish/*.dll'
 
 client_script 'Client/bin/Release/**/publish/*.net.dll'
