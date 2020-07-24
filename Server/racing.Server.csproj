@@ -8,7 +8,7 @@
     </PropertyGroup>
   
     <ItemGroup>
-      <PackageReference Include="CitizenFX.Core.Server" Version="1.0.*" />
+      <PackageReference Include="CitizenFX.Core.Server" Version="1.0.2745" />
   
       <Compile Include="../Shared/*.cs" />
     </ItemGroup>
