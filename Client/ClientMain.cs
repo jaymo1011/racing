@@ -1,5 +1,6 @@
 using CitizenFX.Core;
 using System;
+using static CitizenFX.Core.Native.API;
 
 namespace racing.Client
 {
