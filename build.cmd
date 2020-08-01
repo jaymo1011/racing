@@ -13,7 +13,11 @@ mkdir dist\racing
 
 xcopy /y /e resource-root dist\
 copy /y fxmanifest.lua dist\racing
+
 xcopy /y /e Client\bin\Release\net452\publish dist\racing\Client\bin\Release\net452\publish\
+copy /y Client\bin\Release\net452\publish\Newtonsoft.Json.dll dist\racing\Newtonsoft.Json.dll
+copy /y Client\bin\Release\net452\publish\Newtonsoft.Json.dll dist\racing\Newtonsoft.Json.xml
+
 xcopy /y /e Server\bin\Release\netstandard2.0\publish dist\racing\Server\bin\Release\netstandard2.0\publish\
 
 exit

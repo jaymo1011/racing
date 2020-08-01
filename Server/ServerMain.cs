@@ -1,15 +1,30 @@
 using CitizenFX.Core;
 using CitizenFX.Core.Native;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using static racing.UGC;
+
 
 namespace racing.Server
 {
 	public class ServerMain : BaseScript
 	{
+		UGCData parsedRace;
+
 		public ServerMain()
 		{
 			Debug.WriteLine("Setting up server state for racing...");
 
 			Function.Call((Hash)(ulong)API.GetHashKey("SET_SYNC_ENTITY_LOCKDOWN_MODE"), "strict");
+
+			Debug.WriteLine("attempting some ugc parsing");
+			parsedRace = ParseUGC(UGCExample.json);
+			Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(parsedRace.Mission["rule"])}");
+
+			Debug.WriteLine("attempting some checkpoint parsing");
+			//var props = GetPropDefinitions(parsedRace.Prop);
+			//Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(props)}");
 		}
 
 		[EventHandler("onResourceStop")]
@@ -44,7 +59,7 @@ namespace racing.Server
 			Vector3 playerPos = caller.Character.Position;	
 			
 			var veh = World.CreateVehicle(model, playerPos, caller.Character.Heading);
-			caller.SetIntoVehicle(veh);
+			caller.Character.SetIntoVehicle(veh);
 
 			caller.TriggerEvent("chat:addMessage", new
 			{
@@ -52,5 +67,31 @@ namespace racing.Server
 				args = new[] { "Vehicle Spawner", $"Spawned a {model} at {playerPos}. It's handle is {veh.Handle} and you should now be in it." }
 			});
 		}
+
+		// DEBUG
+		// lets start doing actual race things?!
+		[Command("startRace")]
+		void DoTestRaceSetup()
+		{
+			JArray spawnLocations = (JArray)parsedRace.Mission["veh"]["loc"];
+			JArray spawnHeadings = (JArray)parsedRace.Mission["veh"]["head"];
+			int plyCount = 0;
+			// Need to make a vehicle for all players and then set them into it
+			foreach (Player player in Players)
+			{
+				player.TriggerEvent("PlacePropsFromUGC", UGCExample.json);
+				var veh = World.CreateVehicle("nero", spawnLocations[plyCount].ToVector3(), (float)spawnHeadings[plyCount]); // Everyone gets a nero!
+				API.FreezeEntityPosition(veh.Handle, true);
+				player.Character.SetIntoVehicle(veh);
+			}
+		}
+
+		[Command("unfreezeme")]
+		void UnfreezeCommand(Player caller)
+		{
+			if (API.GetVehiclePedIsIn(caller.Character.Handle, false) != 0)
+				API.FreezeEntityPosition(API.GetVehiclePedIsIn(caller.Character.Handle, false), false);
+		}
+
 	}
 }

@@ -4,6 +4,8 @@ game 'gta5'
 resource_type 'gametype' { name = 'Racing' }
 
 file 'Client/bin/Release/**/publish/*.dll'
+file 'Newtonsoft.Json.dll'
+file 'Newtonsoft.Json.xml'
 
 client_script 'Client/bin/Release/**/publish/*.net.dll'
 server_script 'Server/bin/Release/**/publish/*.net.dll'
