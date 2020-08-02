@@ -12,7 +12,10 @@ namespace racing
 {
 	public static partial class UGC
 	{
-		internal static JArray emptyArray = new JArray();
+		/// <summary>
+		/// This empty <see cref="JArray"/> is used as a placeholder for missing data when reading from UGC
+		/// </summary>
+		internal static JArray missingData = new JArray();
 
 		internal static bool ContainsKeys(this JObject o, params string[] keys)
 		{
@@ -22,6 +25,18 @@ namespace racing
 		internal static object TryGet(this JObject o, string key, object defaultValue)
 		{
 			return o.ContainsKey(key) ? o[key] : defaultValue;
+		}
+
+		internal static JArray TryGetArray(this JObject o, string key, JArray defaultValue = null)
+		{
+			if (o.ContainsKey(key))
+			{
+				var potentialArray = o[key];
+				if (potentialArray.Type == JTokenType.Array)
+					return (JArray)potentialArray;
+			}
+
+			return defaultValue == null ? missingData : defaultValue;
 		}
 
 		public static Vector3 ToVector3(this JToken t)
@@ -44,7 +59,42 @@ namespace racing
 			public float Scale;
 			public bool IsRound;
 
-			/*
+			/* // All values relating to checkpoints
+			Var10 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chh");
+			iVar11 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chs");
+			iVar12 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chs2");
+			iVar13 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chvs");
+			iVar14 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chpp");
+			iVar15 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chpps");
+			iVar16 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chl");
+			iVar17 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "sndchk");
+			iVar18 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "sndrsp");
+			iVar19 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpwwt");
+			iVar20 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cppsst");
+			iVar21 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpado");
+			iVar22 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpados");
+			iVar23 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chttu");
+			iVar24 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chttr");
+			iVar25 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpbs1");
+			iVar26 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpbs2");
+			iVar27 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cptfrm");
+			iVar28 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cptfrms");
+			iVar29 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "trfmvm");
+			iVar30 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chdlo");
+			iVar31 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chsto");
+			iVar32 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chdlos");
+			iVar33 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chstos");
+			iVar34 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rsp");
+			iVar35 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cdsblcu");
+			iVar36 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpdss");
+			iVar37 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rndchk");
+			iVar38 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rndchks");
+			iVar39 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpwtr");
+			iVar40 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpwtrs");
+			iVar41 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpair");
+			*/
+
+			/* // Old Constructors
 			public CheckpointDefinition(Vector3 l, float h, float s, bool iR)
 			{
 				Location = l;
@@ -72,18 +122,15 @@ namespace racing
 		public struct UGCData
 		{
 			public JObject raw { get; private set; }
-			public JObject Mission { get; }
-			public JObject Race { get; }
-			public JObject Prop { get; }
+			public JObject Mission { get => (JObject)raw["mission"]; }
+			public JObject Race { get => (JObject)raw["mission"]["race"]; }
+			public JObject Prop { get => (JObject)raw["mission"]["prop"]; }
 			//public List<CheckpointDefinition> Checkpoints { get; private set; }
 			//public List<PropDefinition> Props { get; private set; }
 
 			public UGCData(JObject rawData)
 			{
 				raw = rawData;
-				Mission = (JObject)raw["mission"];
-				Race = (JObject)Mission["race"];
-				Prop = (JObject)Mission["prop"];
 				//Props = new List<PropDefinition>();
 				//Checkpoints = new List<CheckpointDefinition>();
 

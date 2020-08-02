@@ -128,6 +128,7 @@ namespace racing
 			public float SpeedDuration;
 			public int TextureVariant;
 
+			/*
 			public PropDefinition(Vector3 l, Vector3 r, float h, int m, int texVariant, int prplod, int prpsba)
 			{
 				Heading = h;
@@ -138,38 +139,42 @@ namespace racing
 				HasSpeedModifier = GetPropSpeedModificationParameters(m, prpsba, out SpeedAmount, out SpeedDuration);
 				TextureVariant = texVariant;
 			}
+			*/
 		}
 
 		public static List<PropDefinition> GetPropDefinitions(JObject pd)
 		{
 			// Fail real quick if we've been given invalid data
 			if (!pd.ContainsKeys("no", "loc", "model", "head", "vRot"))
-				throw new ArgumentException("Given prop data is missing required keys!", "propData");
+				throw new ArgumentException("Given prop data is missing required keys for props (no, loc, head, model, vRot)", "propData");
 
 			// This is VERY ugly but, I'll fix it eventually
+			// See, now its "fixed" but maybe I could automate this?
 			var propDefinitions = new List<PropDefinition>();
+
 			var numProps = (int)pd["no"];
-			var locations = (JArray)pd["loc"];
-			var rotations = (JArray)pd["vRot"];
-			var headings = (JArray)pd["head"];
-			var models = (JArray)pd["model"];
-			var textureVariants = pd.ContainsKey("prpclr") ? (JArray)pd["prpclr"] : (JArray)pd["prpclc"];
-			JArray lodDistances = new JArray(); var hasLodDistances = pd.ContainsKey("prplod"); if (hasLodDistances)
-				lodDistances = (JArray)pd["prplod"];
-			JArray propSpeeds = new JArray(); var hasPropSpeeds = pd.ContainsKey("prplod"); if (hasPropSpeeds)
-				propSpeeds = (JArray)pd["prpsba"];
+
+			var location = pd.TryGetArray("loc");
+			var rotation = pd.TryGetArray("vRot");
+			var heading = pd.TryGetArray("head");
+			var model = pd.TryGetArray("model");
+			var textureVariant = pd.TryGetArray("prpclr", pd.TryGetArray("prpclc")); //var hasTextureVariant = (textureVariant != missingData);
+			var lodDistance = pd.TryGetArray("prplod"); //var hasLodDistance = (lodDistance != missingData);
+			var speedAdjustment = pd.TryGetArray("prpsba"); //var hasSpeedAdjustment = (speedAdjustment != missingData);
 
 			for (int i = 0; i < numProps; i++)
 			{
-				int lodDist = -1;
-				if (hasLodDistances)
-					lodDist = (int)lodDistances[i];
-				int prpsba = -1;
+				PropDefinition prop = new PropDefinition();
 
-				if (hasPropSpeeds)
-					prpsba = (int)propSpeeds[i];
+				prop.Location =			(Vector3)	location?[i].ToVector3();
+				prop.Heading =			(float)		heading?[i];
+				prop.Model =			(int)		model?[i];
+				prop.Rotation =			(Vector3)	rotation?[i].ToVector3();
+				prop.EntityLODDist =	(int)		lodDistance?[i];
+				prop.HasSpeedModifier =	(bool)		GetPropSpeedModificationParameters(prop.Model, (int)speedAdjustment?[i], out prop.SpeedAmount, out prop.SpeedDuration);
+				prop.TextureVariant =	(int)		textureVariant?[i];
 
-				propDefinitions.Add(new PropDefinition(locations[i].ToVector3(), rotations[i].ToVector3(), (float)headings[i], (int)models[i], (int)textureVariants[i], lodDist, prpsba));
+				propDefinitions.Add(prop);
 			}
 
 			return propDefinitions;
@@ -210,10 +215,10 @@ namespace racing
 
 		public static Checkpoint CreateCheckpoint(this CheckpointDefinition checkpointDef)
 		{
-			var type = checkpointDef.IsRound ? 10 : 5;
+			var type = checkpointDef.IsRound ? 48 : 49;
 			var position = checkpointDef.Location;
 			var target = checkpointDef.Location; // No target for checkpoints justtt yet :)
-			var radius = checkpointDef.IsRound ? 10.5f : 5.5f;
+			var radius = checkpointDef.IsRound ? 21f : 10f;
 			var cylinderRadius = checkpointDef.IsRound ? 10.5f : 5.5f;
 			// Will probably be changed with other data
 			var cylinderHeight = 16f;

@@ -18,35 +18,24 @@ namespace racing
 		{
 			// Fail real quick if we've been given invalid data
 			if (!rd.ContainsKeys("chp", "chh", "chl"))
-				throw new ArgumentException("Given race data is missing required keys!", "rd");
+				throw new ArgumentException("Given race data is missing required keys for checkpoints (chp, chh, chl)", "rd");
 
 			var checkpointDefinitions = new List<CheckpointDefinition>();
 
 			var numCheckpoints = (int)rd["chp"];
-			var heading = (JArray)rd["chh"];
-			var location = (JArray)rd["chl"];
 
-			var scale = (JArray)rd.TryGet("chs", emptyArray);
-			var hasScale = (scale != emptyArray);
-
-			var isRound = (JArray)rd.TryGet("rndchk", emptyArray);
-			var hasRoundFlag = (isRound != emptyArray);
+			var heading =	rd.TryGetArray("chh");
+			var location =	rd.TryGetArray("chl");
+			var scale =		rd.TryGetArray("chs"); //var hasScale = (scale != missingData);
+			var isRound =	rd.TryGetArray("rndchk"); //var hasRoundFlag = (isRound != missingData);
 
 			for (int i = 0; i < numCheckpoints; i++)
 			{
-				/*
-				var thisLocation = location[i].ToVector3();
-				var thisHeading = (float)heading[i];
-				var thisScale = hasScale ? (float)scale[i] : 1f;
-				var thisIsRound = hasRoundFlag ? (bool)isRound[i] : false;
-
-				checkpointDefinitions.Add(new CheckpointDefinition(thisLocation, thisHeading, thisScale, thisIsRound));
-				*/
 				var newCheckpoint = new CheckpointDefinition();
-				newCheckpoint.IsRound = hasRoundFlag ? (bool)isRound[i] : false;
-				newCheckpoint.Location = location[i].ToVector3() + checkpointPositionOffset[newCheckpoint.IsRound ? "round" : "normal"];
-				newCheckpoint.Heading = (float)heading[i];
-				newCheckpoint.Scale = hasScale ? (float)scale[i] : 1f;
+				newCheckpoint.IsRound =		(bool)		isRound?[i];
+				newCheckpoint.Location =	(Vector3)	location?[i].ToVector3() + checkpointPositionOffset[newCheckpoint.IsRound ? "round" : "normal"];
+				newCheckpoint.Heading =		(float)		heading?[i];
+				newCheckpoint.Scale =		(float)		scale?[i];
 
 				checkpointDefinitions.Add(newCheckpoint);
 			}
