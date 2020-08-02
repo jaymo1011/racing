@@ -3,12 +3,16 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Drawing;
 using static CitizenFX.Core.Native.API;
 
 namespace racing
 {
 	public static partial class UGC
 	{
+		public static int[] CheckpointBaseColour = { 254, 235, 169, 255 }; //GetHudColour(13);
+		public static int[] CheckpointConeColour = { 93, 182, 229, 255 }; //GetHudColour(134);
+
 		static bool GetPropSpeedModificationParameters(int model, int prpsba, out int speedUp, out float duration)
 		{
 			// Oh you are going to hate me.
@@ -187,7 +191,7 @@ namespace racing
 				newProp.Heading = propDefinition.Heading;
 				//newProp.Rotation = propDefinition.Rotation;
 				SetEntityRotation(newProp.Handle, propDefinition.Rotation.X, propDefinition.Rotation.Y, propDefinition.Rotation.Z, 2, false);
-				
+
 				if (propDefinition.TextureVariant > -1)
 					SetObjectTextureVariant(newProp.Handle, propDefinition.TextureVariant);
 				if (propDefinition.EntityLODDist > -1)
@@ -202,6 +206,25 @@ namespace racing
 			}
 
 			return propList;
+		}
+
+		public static Checkpoint CreateCheckpoint(this CheckpointDefinition checkpointDef)
+		{
+			var type = checkpointDef.IsRound ? 10 : 5;
+			var position = checkpointDef.Location;
+			var target = checkpointDef.Location; // No target for checkpoints justtt yet :)
+			var radius = checkpointDef.IsRound ? 10.5f : 5.5f;
+			var cylinderRadius = checkpointDef.IsRound ? 10.5f : 5.5f;
+			// Will probably be changed with other data
+			var cylinderHeight = 16f;
+
+			int checkpointHandle = CitizenFX.Core.Native.API.CreateCheckpoint(type, position.X, position.Y, position.Z, target.X, target.Y, target.Z, radius, CheckpointBaseColour[0], CheckpointBaseColour[1], CheckpointBaseColour[2], CheckpointBaseColour[3], 0);
+			SetCheckpointCylinderHeight(checkpointHandle, cylinderHeight, cylinderHeight, cylinderRadius);
+			SetCheckpointIconRgba(checkpointHandle, CheckpointConeColour[0], CheckpointConeColour[1], CheckpointConeColour[2], CheckpointConeColour[3]);
+
+			// Blips still need to be managed!
+
+			return new Checkpoint(checkpointHandle);
 		}
 	}
 }

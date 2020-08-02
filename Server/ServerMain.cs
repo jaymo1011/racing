@@ -75,11 +75,14 @@ namespace racing.Server
 		{
 			JArray spawnLocations = (JArray)parsedRace.Mission["veh"]["loc"];
 			JArray spawnHeadings = (JArray)parsedRace.Mission["veh"]["head"];
+			List<CheckpointDefinition> checkpointDefinitions = GetCheckpointDefinitions(parsedRace.Race);
+			string checkpointString = JArray.FromObject(checkpointDefinitions).ToString();
 			int plyCount = 0;
 			// Need to make a vehicle for all players and then set them into it
 			foreach (Player player in Players)
 			{
 				player.TriggerEvent("PlacePropsFromUGC", UGCExample.json);
+				player.TriggerEvent("debug_RegisterAllCheckpoints", checkpointString);
 				var veh = World.CreateVehicle("nero", spawnLocations[plyCount].ToVector3(), (float)spawnHeadings[plyCount]); // Everyone gets a nero!
 				API.FreezeEntityPosition(veh.Handle, true);
 				player.Character.SetIntoVehicle(veh);

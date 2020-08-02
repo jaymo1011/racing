@@ -6,6 +6,7 @@ using System.Linq;
 using static racing.UGC;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace racing.Client
 {
@@ -114,6 +115,27 @@ namespace racing.Client
 
 			Debug.WriteLine("uhhh... lets go I guess???????");
 			await propDefinitions.CreateProps();
+		}
+
+		[EventHandler("debug_RegisterAllCheckpoints")]
+		public void debug_RegisterAllCheckpoints(string checkpointDefinitionsJsonArray)
+		{
+			//try
+			//{
+				var cdja = JsonConvert.DeserializeObject<CheckpointDefinition[]>(checkpointDefinitionsJsonArray);
+				cdja.All((cp) =>
+				{
+					//CheckpointDefinition cpd = JsonConvert.DeserializeObject<CheckpointDefinition>(cp.ToString());
+					cp.CreateCheckpoint();
+					return true;
+				});
+			//} 
+			//catch(Exception e)
+			//{
+				//throw new ArgumentException("EventHandler was called with a JSON string which did not contain valid CheckpointDefinitions", "checkpointDefinitionsJsonArray", e);
+			//}
+
+			//Debug.WriteLine($"checkpoints are: {checkpointDefinitionsJsonArray}");
 		}
 
 		[Command("spawnnow")] // DEBUG
