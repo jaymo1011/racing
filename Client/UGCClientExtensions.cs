@@ -215,19 +215,41 @@ namespace racing
 
 		public static Checkpoint CreateCheckpoint(this CheckpointDefinition checkpointDef)
 		{
-			var type = checkpointDef.IsRound ? 48 : 49;
+			var type = checkpointDef.IsRound ? 10 : 5;
 			var position = checkpointDef.Location;
+			// bandito race vvar1 = 5f, 1.2f;
+			//position += new Vector3(0f, 0f, 5f);
 			var target = checkpointDef.Location; // No target for checkpoints justtt yet :)
 			var radius = checkpointDef.IsRound ? 21f : 10f;
-			var cylinderRadius = checkpointDef.IsRound ? 10.5f : 5.5f;
+			var cylinderRadius = 100f;//checkpointDef.IsRound ? 10.5f : 5.5f;
 			// Will probably be changed with other data
-			var cylinderHeight = 16f;
+			var cylinderHeight = 9.5f;
 
 			int checkpointHandle = CitizenFX.Core.Native.API.CreateCheckpoint(type, position.X, position.Y, position.Z, target.X, target.Y, target.Z, radius, CheckpointBaseColour[0], CheckpointBaseColour[1], CheckpointBaseColour[2], CheckpointBaseColour[3], 0);
 			SetCheckpointCylinderHeight(checkpointHandle, cylinderHeight, cylinderHeight, cylinderRadius);
 			SetCheckpointIconRgba(checkpointHandle, CheckpointConeColour[0], CheckpointConeColour[1], CheckpointConeColour[2], CheckpointConeColour[3]);
+			if (!checkpointDef.IsRound)
+			{
+				float groundZ = World.GetGroundHeight(new Vector3(position.X, position.Y, position.Z + 1f));
+				Vector3 planeOrigin = new Vector3(position.X, position.Y, groundZ);
 
-			// Blips still need to be managed!
+				var ray = World.Raycast(new Vector3(planeOrigin.X, planeOrigin.Y, planeOrigin.Z + 1f), new Vector3(planeOrigin.X, planeOrigin.Y, planeOrigin.Z - 1f), IntersectOptions.Objects);
+				
+				if (ray.DitHit)
+				{
+					// yay our raycast hit!
+					Debug.WriteLine($"got ray! {ray.HitPosition}::{ray.SurfaceNormal}");
+					var vector1 = planeOrigin; //+ (Vector3.Up);
+					//var vector2 = ray.HitPosition;// + ray.SurfaceNormal;
+					// seems to be RENDER FROM X1 Y1 Z1 TO X2, Y2, Z2 so... yeah, invert it and it will **only** draw within the domain
+					if (ray.SurfaceNormal.Z > 0f)
+						N_0xf51d36185993515d(checkpointHandle, vector1.X - 0.05f, vector1.Y, vector1.Z, ray.SurfaceNormal.X, ray.SurfaceNormal.Y, ray.SurfaceNormal.Z);
+				}
+
+				// Blips still need to be managed!
+
+				Debug.WriteLine($"created checkpoint {checkpointHandle} where the z is {groundZ}");
+			}
 
 			return new Checkpoint(checkpointHandle);
 		}

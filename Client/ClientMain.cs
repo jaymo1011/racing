@@ -77,7 +77,7 @@ namespace racing.Client
 
 			// Is interior ready is not viable, damn
 			//while (!IsInteriorReady(FacilityInteriorId))
-				//await Delay(100);
+			//await Delay(100);
 
 			Debug.WriteLine("Facility loading done, lets go!");
 
@@ -87,27 +87,62 @@ namespace racing.Client
 		}
 
 		[EventHandler("onClientMapStart")]
-		async void OnClientMapStart()
+		void OnClientMapStart(string mapName)
 		{
 			Debug.WriteLine("mapstart!");
 
 			// Make sure we don't automatically spawn on death, manual spawning only!
 			Exports["spawnmanager"].setAutoSpawn(false);
 
-			// Load the facility
-			await LoadFacility();
+			// Let's see if we can nab the UGC for the current map...
+			string ugcFile = "none";
+
+			if (GetNumResourceMetadata(mapName, "ugc_file") > 0)
+			{
+				// Found it!
+				var ugcFilePath = GetResourceMetadata(mapName, "ugc_file", 0);
+				ugcFile = LoadResourceFile(mapName, ugcFilePath); // We hope it's added as a "file"
+			}
+			else if (GetResourceMetadata(mapName, "isUgcUrlSurrogate", 0) == "yes")
+			{
+				// dunno what to do here!
+				return;
+			}
+			else
+			{
+				// Not a valid race map, not sure what's going on really...
+				return;
+			}
+
+			// Let's now load our new UGC stuff!
+			CurrentMap = ParseUGC(ugcFile);
+
+			// Find where the loading scene (I think?!) is.
+			var spawnVector = (Vector3)CurrentMap.Race["scene"]?.ToVector3();
 
 			// And now we spawn there
-			Exports["spawnmanager"].spawnPlayer(DefaultSpawnData);
+			Exports["spawnmanager"].spawnPlayer(new {
+				x = spawnVector.X,
+				y = spawnVector.Y,
+				z = spawnVector.Z,
+				heading = 39.3f,
+				model = GetHashKey("a_m_y_skater_02"),
+			});
+			
+			// Freeze the player so they don't fall through the world!
+			LocalPlayer.Character.IsPositionFrozen = true;
+
+			// Load the actual map stuff!
+			PlacePropsFromUGC();
 		}
 
-		[EventHandler("PlacePropsFromUGC")]
-		async void PlacePropsFromUGC(string ugcData)
+		//[EventHandler("PlacePropsFromUGC")]
+		async void PlacePropsFromUGC()
 		{
+			// early out, we don't deal with maps anymore!
+			return;
+
 			Debug.WriteLine("prop time!");
-
-			CurrentMap = ParseUGC(ugcData);
-
 			Debug.WriteLine($"I guess we got ugc data? {JsonConvert.SerializeObject(CurrentMap.Mission["rule"])}");
 
 			Debug.WriteLine("lets try and get definitions");
@@ -115,6 +150,9 @@ namespace racing.Client
 
 			Debug.WriteLine("uhhh... lets go I guess???????");
 			await propDefinitions.CreateProps();
+
+			// So now thats done, let's tell the server we're all loaded and good to go for the race!
+			TriggerServerEvent("racing:mapLoaded");
 		}
 
 		[EventHandler("debug_RegisterAllCheckpoints")]

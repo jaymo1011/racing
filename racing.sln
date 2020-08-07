@@ -15,6 +15,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Resource Files", "Resource Files", "{2FC88274-401E-4549-9CF9-48900FA0EA14}"
 	ProjectSection(SolutionItems) = preProject
 		fxmanifest.lua = fxmanifest.lua
+		resource-root\racing\getMapDirectives.lua = resource-root\racing\getMapDirectives.lua
 		README.md = README.md
 	EndProjectSection
 EndProject

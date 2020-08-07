@@ -36,7 +36,7 @@ namespace racing
 					return (JArray)potentialArray;
 			}
 
-			return defaultValue == null ? missingData : defaultValue;
+			return defaultValue ?? null;
 		}
 
 		public static Vector3 ToVector3(this JToken t)
@@ -58,24 +58,27 @@ namespace racing
 			public float Heading;
 			public float Scale;
 			public bool IsRound;
+			//public int WrongWayTimer;
+			//public CheckpointDefinition SecondCheckpoint;
+
 
 			/* // All values relating to checkpoints
-			Var10 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chh");
-			iVar11 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chs");
-			iVar12 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chs2");
-			iVar13 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chvs");
-			iVar14 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chpp");
-			iVar15 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chpps");
-			iVar16 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chl");
-			iVar17 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "sndchk");
-			iVar18 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "sndrsp");
-			iVar19 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpwwt");
-			iVar20 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cppsst");
+			Var10 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chh");		// Heading
+			iVar11 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chs");		// Scale
+			iVar12 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chs2");		// Scale (2)
+			iVar13 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chvs");		//
+			iVar14 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chpp");		//
+			iVar15 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chpps");		//
+			iVar16 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chl");		// Location
+			iVar17 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "sndchk");	// Location (2)
+			iVar18 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "sndrsp");	// 
+			iVar19 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpwwt");		// Wrong Way Time
+			iVar20 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cppsst");	
 			iVar21 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpado");
 			iVar22 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpados");
 			iVar23 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chttu");
 			iVar24 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "chttr");
-			iVar25 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpbs1");
+			iVar25 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpbs1");		
 			iVar26 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpbs2");
 			iVar27 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cptfrm");
 			iVar28 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cptfrms");
@@ -87,11 +90,11 @@ namespace racing
 			iVar34 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rsp");
 			iVar35 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cdsblcu");
 			iVar36 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpdss");
-			iVar37 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rndchk");
-			iVar38 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rndchks");
+			iVar37 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rndchk");	// Is Round
+			iVar38 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "rndchks");	// Is Round (2)
 			iVar39 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpwtr");
 			iVar40 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpwtrs");
-			iVar41 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpair");
+			iVar41 = DATAFILE::_OBJECT_VALUE_GET_ARRAY(iVar2, "cpair");		// Has second checkpoint
 			*/
 
 			/* // Old Constructors

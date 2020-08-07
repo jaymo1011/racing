@@ -2,15 +2,20 @@ using CitizenFX.Core;
 using CitizenFX.Core.Native;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using static racing.UGC;
+using System.Net.Http;
+
 
 
 namespace racing.Server
 {
 	public class ServerMain : BaseScript
 	{
-		UGCData parsedRace;
+		static readonly HttpClient httpClient = new HttpClient();
+
+		UGCData CurrentMap;
 
 		public ServerMain()
 		{
@@ -18,13 +23,54 @@ namespace racing.Server
 
 			Function.Call((Hash)(ulong)API.GetHashKey("SET_SYNC_ENTITY_LOCKDOWN_MODE"), "strict");
 
-			Debug.WriteLine("attempting some ugc parsing");
-			parsedRace = ParseUGC(UGCExample.json);
-			Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(parsedRace.Mission["rule"])}");
+			//Debug.WriteLine("attempting some ugc parsing");
+			//parsedRace = ParseUGC(UGCExample.json);
+			//Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(parsedRace.Mission["rule"])}");
 
-			Debug.WriteLine("attempting some checkpoint parsing");
+			//Debug.WriteLine("attempting some checkpoint parsing");
 			//var props = GetPropDefinitions(parsedRace.Prop);
 			//Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(props)}");
+		}
+
+		[EventHandler("onMapStart")]
+		async void OnMapStart(string mapName)
+		{
+			string ugcFile = "none";
+
+			if (API.GetNumResourceMetadata(mapName, "ugc_file") > 0)
+			{
+				var ugcFilePath = API.GetResourceMetadata(mapName, "ugc_file", 0);
+				ugcFile = API.LoadResourceFile(mapName, ugcFilePath);
+			}
+			/*
+			else if (API.GetResourceMetadata(mapName, "isUgcUrlSurrogate", 0) != null)
+			{
+				// we haven't implemented getting stuff from url yet
+				// will require some client state sending whaterys (or maybe not?)
+				try
+				{
+					ugcFile = await httpClient.GetStringAsync("http://prod.cloud.rockstargames.com/ugc/gta5mission/0000/vyTABS5xR06--t_w6e9t0w/0_0_en.json");
+				}
+				catch (HttpRequestException e)
+				{
+					Debug.WriteLine("Exception while requesting a UGC URL!\nMessage: {0}", e.Message);
+				}
+				return;
+			}
+			*/
+			else
+			{	
+				// no map loading today!
+				return;
+			}
+
+			if (ugcFile != "none")
+			{
+				Debug.WriteLine($"heres some of the UGC we got {ugcFile.Substring(0, 32)}");
+				Debug.WriteLine("attempting some ugc parsing");
+				CurrentMap = ParseUGC(ugcFile);
+				Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(CurrentMap.Mission["rule"])}");
+			}
 		}
 
 		[EventHandler("onResourceStop")]
@@ -73,19 +119,27 @@ namespace racing.Server
 		[Command("startRace")]
 		void DoTestRaceSetup()
 		{
-			JArray spawnLocations = (JArray)parsedRace.Mission["veh"]["loc"];
-			JArray spawnHeadings = (JArray)parsedRace.Mission["veh"]["head"];
-			List<CheckpointDefinition> checkpointDefinitions = GetCheckpointDefinitions(parsedRace.Race);
-			string checkpointString = JArray.FromObject(checkpointDefinitions).ToString();
-			int plyCount = 0;
-			// Need to make a vehicle for all players and then set them into it
-			foreach (Player player in Players)
+			try
 			{
-				player.TriggerEvent("PlacePropsFromUGC", UGCExample.json);
-				player.TriggerEvent("debug_RegisterAllCheckpoints", checkpointString);
-				var veh = World.CreateVehicle("nero", spawnLocations[plyCount].ToVector3(), (float)spawnHeadings[plyCount]); // Everyone gets a nero!
-				API.FreezeEntityPosition(veh.Handle, true);
-				player.Character.SetIntoVehicle(veh);
+				JArray spawnLocations = (JArray)CurrentMap.Race["veh"]["loc"];
+				JArray spawnHeadings = (JArray)CurrentMap.Race["veh"]["head"];
+				List<CheckpointDefinition> checkpointDefinitions = GetCheckpointDefinitions(CurrentMap.Race);
+				string checkpointString = JArray.FromObject(checkpointDefinitions).ToString();
+				int plyCount = 0;
+				// Need to make a vehicle for all players and then set them into it
+				foreach (Player player in Players)
+				{
+					//player.TriggerEvent("PlacePropsFromUGC", UGCExample.json);
+					//player.TriggerEvent("debug_RegisterAllCheckpoints", checkpointString);
+					var veh = World.CreateVehicle("nero", spawnLocations[plyCount].ToVector3(), 0f); // Everyone gets a nero!
+					API.FreezeEntityPosition(veh.Handle, true);
+					player.Character.SetIntoVehicle(veh);
+					plyCount++;
+				}
+			} 
+			catch (Exception e)
+			{
+				Debug.WriteLine(e.ToString());
 			}
 		}
 
