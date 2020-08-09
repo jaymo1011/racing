@@ -1,0 +1,39 @@
+<Project Condition=" '$(BuildingInsideVisualStudio)' == 'true' ">
+	
+	<PropertyGroup>
+		<FXResourceRoot>$(SolutionDir)\dist\racing</FXResourceRoot>
+		<FXResourceProjectDir>$(FXResourceRoot)\$(ProjectName)</FXResourceProjectDir>
+	</PropertyGroup>
+
+	<Target Name="CreateDistDirectory" AfterTargets="Build">
+		<MakeDir Directories="$(FXResourceProjectDir)" />
+	</Target>
+
+	<Target Name="CleanProjectDist" AfterTargets="Clean">
+		<RemoveDir Directories="$(FXResourceRoot)\$(ProjectName)" ContinueOnError="true" />
+	</Target>
+
+	<Target Name="CleanClientLibraries" AfterTargets="Clean" Condition=" '$(ProjectName)' == 'RacingClient' ">
+		<ItemGroup>
+			<ClientLibraries Include="$(FXResourceRoot)\*.dll;$(FXResourceRoot)\*.xml" />
+		</ItemGroup>
+		<Delete Files="@(ClientLibraries)" ContinueOnError="true" />
+	</Target>
+	
+	<Target Name="CopyToDistOnBuild" AfterTargets="Build" DependsOnTargets="CreateDistDirectory">
+		<ItemGroup>
+			<FXResourceFiles Include="$(TargetDir)*.*" Exclude="$(TargetDir)*.pdb;$(TargetDir)CitizenFX.Core.*" />
+		</ItemGroup>
+		
+		<Copy SourceFiles="@(FXResourceFiles)" DestinationFolder="$(FXResourceRoot)\$(ProjectName)" />
+	</Target>
+
+	<Target Name="MoveClientLibrariesToRoot" AfterTargets="CopyToDistOnBuild" Condition=" '$(ProjectName)' == 'RacingClient' ">
+		<ItemGroup>
+			<ClientLibraries Include="$(FXResourceProjectDir)\*.dll;$(FXResourceProjectDir)\*.xml" Exclude="$(FXResourceProjectDir)\*.net.dll" />
+		</ItemGroup>
+
+		<Move SourceFiles="@(ClientLibraries)" DestinationFolder="$(FXResourceRoot)" />
+	</Target>
+	
+</Project>

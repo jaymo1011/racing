@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net452</TargetFramework>
+		<RootNamespace>racing.Client</RootNamespace>
+		<Authors>Jaymo</Authors>
+		<Product>Racing</Product>
+		<Description>Client component of the FiveM racing gamemode</Description>
+		<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<RepositoryUrl>https://github.com/jaymo1011/racing</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PlatformTarget>x64</PlatformTarget>
+		<AssemblyName>RacingClient.net</AssemblyName>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="../Shared/*.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CitizenFX.Core.Client" Version="1.0.2797" />
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.3">
+			<ExcludeAssets>compile</ExcludeAssets>
+			<GeneratePathProperty>true</GeneratePathProperty>
+		</PackageReference>
+		<Reference Include="Newtonsoft.Json">
+			<HintPath>$(PkgNewtonsoft_Json)\lib\portable-net40+sl5+win8+wp8+wpa81\Newtonsoft.Json.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+</Project>
