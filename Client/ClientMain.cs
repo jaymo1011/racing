@@ -22,7 +22,7 @@ namespace racing.Client
 		};
 		*/
 		
-		static object DefaultSpawnData = new {
+		static readonly object DefaultSpawnData = new {
 			x = 345f,
 			y = 4842f,
 			z = -60f,
@@ -30,11 +30,11 @@ namespace racing.Client
 			model = GetHashKey("a_m_y_skater_02"),
 		};
 
-		static string FacilityIpl = "xm_x17dlc_int_placement_interior_33_x17dlc_int_02_milo_";
-		static int FacilityInteriorId = 269313;
+		static readonly string FacilityIpl = "xm_x17dlc_int_placement_interior_33_x17dlc_int_02_milo_";
+		static readonly int FacilityInteriorId = 269313;
 		static Vector3 FacilityLocation = new Vector3(345f, 4842f, -60f);
 
-		static UGCData CurrentMap;
+		//static Map CurrentMap; // Lets not keep a map on the client
 
 		public ClientMain()
 		{
@@ -115,19 +115,24 @@ namespace racing.Client
 			}
 
 			// Let's now load our new UGC stuff!
-			CurrentMap = ParseUGC(ugcFile);
+			//CurrentMap = ParseUGC(ugcFile);
 
 			// Find where the loading scene (I think?!) is.
-			var spawnVector = (Vector3)CurrentMap.Race["scene"]?.ToVector3();
+			/*Vector3? spawnVector = CurrentMap?.Get("race.scene").ToVector3();
 
-			// And now we spawn there
-			Exports["spawnmanager"].spawnPlayer(new {
-				x = spawnVector.X,
-				y = spawnVector.Y,
-				z = spawnVector.Z,
-				heading = 39.3f,
-				model = GetHashKey("a_m_y_skater_02"),
-			});
+			if (spawnVector != null)
+			{
+				var _spawnVector = (Vector3)spawnVector;
+				// And now we spawn there
+				Exports["spawnmanager"].spawnPlayer(new
+				{
+					x = _spawnVector.X,
+					y = _spawnVector.Y,
+					z = _spawnVector.Z,
+					heading = 39.3f,
+					model = GetHashKey("a_m_y_skater_02"),
+				});
+			}*/
 			
 			// Freeze the player so they don't fall through the world!
 			LocalPlayer.Character.IsPositionFrozen = true;
@@ -141,6 +146,7 @@ namespace racing.Client
 		{
 			// early out, we don't deal with maps anymore!
 			return;
+			/*
 
 			Debug.WriteLine("prop time!");
 			Debug.WriteLine($"I guess we got ugc data? {JsonConvert.SerializeObject(CurrentMap.Mission["rule"])}");
@@ -152,7 +158,7 @@ namespace racing.Client
 			await propDefinitions.CreateProps();
 
 			// So now thats done, let's tell the server we're all loaded and good to go for the race!
-			TriggerServerEvent("racing:mapLoaded");
+			TriggerServerEvent("racing:mapLoaded");*/
 		}
 
 		[EventHandler("debug_RegisterAllCheckpoints")]
@@ -160,13 +166,13 @@ namespace racing.Client
 		{
 			//try
 			//{
-				var cdja = JsonConvert.DeserializeObject<CheckpointDefinition[]>(checkpointDefinitionsJsonArray);
-				cdja.All((cp) =>
-				{
+				//var cdja = JsonConvert.DeserializeObject<CheckpointDefinition[]>(checkpointDefinitionsJsonArray);
+				//cdja.All((cp) =>
+				//{
 					//CheckpointDefinition cpd = JsonConvert.DeserializeObject<CheckpointDefinition>(cp.ToString());
-					cp.CreateCheckpoint();
-					return true;
-				});
+					//cp.CreateCheckpoint();
+					//return true;
+				//});
 			//} 
 			//catch(Exception e)
 			//{

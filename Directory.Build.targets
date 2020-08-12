@@ -28,7 +28,7 @@
 		<Copy SourceFiles="@(FXResourceFiles)" DestinationFolder="$(FXResourceRoot)\$(ProjectName)" />
 	</Target>
 
-	<Target Name="MoveClientLibrariesToRoot" AfterTargets="CopyToDistOnBuild" Condition=" '$(ProjectName)' == 'RacingClient' ">
+	<Target Name="MoveClientLibrariesToRoot" AfterTargets="CopyToDistOnBuild" DependsOnTargets="Build;CopyToDistOnBuild" Condition=" '$(ProjectName)' == 'RacingClient' ">
 		<ItemGroup>
 			<ClientLibraries Include="$(FXResourceProjectDir)\*.dll;$(FXResourceProjectDir)\*.xml" Exclude="$(FXResourceProjectDir)\*.net.dll" />
 		</ItemGroup>

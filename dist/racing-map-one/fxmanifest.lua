@@ -1,7 +1,6 @@
 resource_type 'map' { gameTypes = { ['racing'] = true } }
 
-ugc_file 'stunt-race.json'
-file 'stunt-race.json'
+map "stunt-race.lua"
 
 fx_version 'adamant'
 game 'gta5'

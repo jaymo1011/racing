@@ -4,10 +4,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using static racing.UGC;
 using System.Net.Http;
-
-
+using System.Linq;
 
 namespace racing.Server
 {
@@ -15,7 +13,7 @@ namespace racing.Server
 	{
 		static readonly HttpClient httpClient = new HttpClient();
 
-		UGCData CurrentMap;
+		UGC.Map CurrentMap;
 
 		public ServerMain()
 		{
@@ -23,55 +21,65 @@ namespace racing.Server
 
 			Function.Call((Hash)(ulong)API.GetHashKey("SET_SYNC_ENTITY_LOCKDOWN_MODE"), "strict");
 
+			MapManager.Instance.Value.RegisterKeyDirective("ugc_file");
+			MapManager.Instance.Value.RegisterKeyDirective("ugc_data");
+
 			//Debug.WriteLine("attempting some ugc parsing");
 			//parsedRace = ParseUGC(UGCExample.json);
-			//Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(parsedRace.Mission["rule"])}");
+			//
 
 			//Debug.WriteLine("attempting some checkpoint parsing");
 			//var props = GetPropDefinitions(parsedRace.Prop);
 			//Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(props)}");
 		}
 
-		[EventHandler("onMapStart")]
-		async void OnMapStart(string mapName)
+		[EventHandler("onMapParsed")]
+		async void OnMapParsed()
 		{
-			string ugcFile = "none";
+			await Delay(200); // Wait some time to ensure map directives have actually been collected
 
-			if (API.GetNumResourceMetadata(mapName, "ugc_file") > 0)
+			string ugcJsonString = null;
+
+			IEnumerable<dynamic> UGCDataEntries = MapManager.Instance.Value.GetDirectives("ugc_data");
+			if (UGCDataEntries.Any())
 			{
-				var ugcFilePath = API.GetResourceMetadata(mapName, "ugc_file", 0);
-				ugcFile = API.LoadResourceFile(mapName, ugcFilePath);
-			}
-			/*
-			else if (API.GetResourceMetadata(mapName, "isUgcUrlSurrogate", 0) != null)
-			{
-				// we haven't implemented getting stuff from url yet
-				// will require some client state sending whaterys (or maybe not?)
-				try
+				foreach (string entry in UGCDataEntries)
 				{
-					ugcFile = await httpClient.GetStringAsync("http://prod.cloud.rockstargames.com/ugc/gta5mission/0000/vyTABS5xR06--t_w6e9t0w/0_0_en.json");
+					ugcJsonString = entry;
+					break;
 				}
-				catch (HttpRequestException e)
-				{
-					Debug.WriteLine("Exception while requesting a UGC URL!\nMessage: {0}", e.Message);
-				}
-				return;
-			}
-			*/
-			else
-			{	
-				// no map loading today!
-				return;
 			}
 
-			if (ugcFile != "none")
+			if (ugcJsonString == null)
 			{
-				Debug.WriteLine($"heres some of the UGC we got {ugcFile.Substring(0, 32)}");
-				Debug.WriteLine("attempting some ugc parsing");
-				CurrentMap = ParseUGC(ugcFile);
-				Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(CurrentMap.Mission["rule"])}");
+				var UGCFileEntries = MapManager.Instance.Value.GetDirectives("ugc_file");
+				if (UGCFileEntries.Any())
+				{
+					string mapName = Exports["mapmanager"].getCurrentMap();
+					foreach (string entry in UGCFileEntries)
+					{
+						var fileContent = API.LoadResourceFile(mapName, entry);
+						if (fileContent != null)
+						{
+							ugcJsonString = fileContent;
+							break;
+						}
+					}
+				}
+			}
+
+			if (ugcJsonString != null)
+			{
+				CurrentMap = new UGC.Map(ugcJsonString);
+				Debug.WriteLine($"Mission rule sample: {JsonConvert.SerializeObject(CurrentMap.GetObject("mission.rule"))}");
+				//List<Vector3> spawnLocations = CurrentMap["veh"].;
+				foreach (Player p in Players)
+				{
+					p.TriggerEvent("racing:changeActiveMap", CurrentMap.Json);
+				}
 			}
 		}
+
 
 		[EventHandler("onResourceStop")]
 		void OnResourceStop(string resourceName)
@@ -121,9 +129,12 @@ namespace racing.Server
 		{
 			try
 			{
-				JArray spawnLocations = (JArray)CurrentMap.Race["veh"]["loc"];
-				JArray spawnHeadings = (JArray)CurrentMap.Race["veh"]["head"];
-				List<CheckpointDefinition> checkpointDefinitions = GetCheckpointDefinitions(CurrentMap.Race);
+				//List<Vector3> spawnLocations = (List<Vector3>)((List<Object>)CurrentMap?["veh"]?["loc"]?["cuck cuck cuck uck"]).Cast<Vector3>();
+				//List<float> spawnHeadings = (List<float>)((List<object>)CurrentMap?["race"]?["veh"]?["head"]).Cast<float>();
+
+				var spawnLocations = CurrentMap.GetList<Vector3>("race.veh.loc");
+				var spawnHeadings = CurrentMap.GetList<float>("race.veh.head");
+				List<UGC.CheckpointDefinition> checkpointDefinitions = UGC.GetCheckpointDefinitionsFromMap(CurrentMap);
 				string checkpointString = JArray.FromObject(checkpointDefinitions).ToString();
 				int plyCount = 0;
 				// Need to make a vehicle for all players and then set them into it
@@ -131,7 +142,7 @@ namespace racing.Server
 				{
 					//player.TriggerEvent("PlacePropsFromUGC", UGCExample.json);
 					//player.TriggerEvent("debug_RegisterAllCheckpoints", checkpointString);
-					var veh = World.CreateVehicle("nero", spawnLocations[plyCount].ToVector3(), 0f); // Everyone gets a nero!
+					var veh = World.CreateVehicle("nero", spawnLocations[plyCount], 0f); // Everyone gets a nero!
 					API.FreezeEntityPosition(veh.Handle, true);
 					player.Character.SetIntoVehicle(veh);
 					plyCount++;
@@ -150,5 +161,48 @@ namespace racing.Server
 				API.FreezeEntityPosition(API.GetVehiclePedIsIn(caller.Character.Handle, false), false);
 		}
 
+
+		/*
+		[EventHandler("onMapStart")]
+		async void OnMapStart(string mapName)
+		{
+			string ugcFile = "none";
+
+			if (API.GetNumResourceMetadata(mapName, "ugc_file") > 0)
+			{
+				var ugcFilePath = API.GetResourceMetadata(mapName, "ugc_file", 0);
+				ugcFile = API.LoadResourceFile(mapName, ugcFilePath);
+			}
+			/*
+			else if (API.GetResourceMetadata(mapName, "isUgcUrlSurrogate", 0) != null)
+			{
+				// we haven't implemented getting stuff from url yet
+				// will require some client state sending whaterys (or maybe not?)
+				try
+				{
+					ugcFile = await httpClient.GetStringAsync("http://prod.cloud.rockstargames.com/ugc/gta5mission/0000/vyTABS5xR06--t_w6e9t0w/0_0_en.json");
+				}
+				catch (HttpRequestException e)
+				{
+					Debug.WriteLine("Exception while requesting a UGC URL!\nMessage: {0}", e.Message);
+				}
+				return;
+			}
+			
+			else
+			{	
+				// no map loading today!
+				return;
+			}
+
+			if (ugcFile != "none")
+			{
+				Debug.WriteLine($"heres some of the UGC we got {ugcFile.Substring(0, 32)}");
+				Debug.WriteLine("attempting some ugc parsing");
+				CurrentMap = ParseUGC(ugcFile);
+				Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(CurrentMap.Mission["rule"])}");
+			}
+		}
+		*/
 	}
 }
