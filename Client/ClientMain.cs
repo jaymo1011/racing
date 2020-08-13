@@ -3,7 +3,6 @@ using System;
 using System.Threading.Tasks;
 using static CitizenFX.Core.Native.API;
 using System.Linq;
-using static racing.UGC;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
@@ -30,17 +29,14 @@ namespace racing.Client
 			model = GetHashKey("a_m_y_skater_02"),
 		};
 
-		static readonly string FacilityIpl = "xm_x17dlc_int_placement_interior_33_x17dlc_int_02_milo_";
-		static readonly int FacilityInteriorId = 269313;
-		static Vector3 FacilityLocation = new Vector3(345f, 4842f, -60f);
+		public static List<Prop> LoadedProps = new List<Prop>();
 
-		//static Map CurrentMap; // Lets not keep a map on the client
+		// Kinda a dumb idea anyway
+		//static readonly string FacilityIpl = "xm_x17dlc_int_placement_interior_33_x17dlc_int_02_milo_";
+		//static readonly int FacilityInteriorId = 269313;
+		//static Vector3 FacilityLocation = new Vector3(345f, 4842f, -60f);
 
-		public ClientMain()
-		{
-		
-		}
-
+		/*
 		async Task LoadFacility()
 		{
 			Debug.WriteLine("loading IPL");
@@ -85,14 +81,24 @@ namespace racing.Client
 
 			return;
 		}
+		*/
+
+		static UGC.Map CurrentMap;
+
+		public ClientMain()
+		{
+		
+		}
 
 		[EventHandler("onClientMapStart")]
-		void OnClientMapStart(string mapName)
+		void OnClientMapStart()
 		{
-			Debug.WriteLine("mapstart!");
-
 			// Make sure we don't automatically spawn on death, manual spawning only!
 			Exports["spawnmanager"].setAutoSpawn(false);
+
+			TriggerServerEvent("clientMapStarted");
+
+			/*
 
 			// Let's see if we can nab the UGC for the current map...
 			string ugcFile = "none";
@@ -133,12 +139,22 @@ namespace racing.Client
 					model = GetHashKey("a_m_y_skater_02"),
 				});
 			}*/
-			
+
 			// Freeze the player so they don't fall through the world!
-			LocalPlayer.Character.IsPositionFrozen = true;
+
 
 			// Load the actual map stuff!
-			PlacePropsFromUGC();
+			//PlacePropsFromUGC();
+		}
+
+		[EventHandler("racing:loadMissionJSON")]
+		async void LoadMissionJson(string missionJson)
+		{
+			CurrentMap = new UGC.Map(missionJson);
+			Debug.WriteLine("loading gayson");
+			await CurrentMap.Load();
+			Debug.WriteLine("done loading gayson");
+			TriggerServerEvent("racing:onClientMapLoaded");
 		}
 
 		//[EventHandler("PlacePropsFromUGC")]
@@ -164,22 +180,22 @@ namespace racing.Client
 		[EventHandler("debug_RegisterAllCheckpoints")]
 		public void debug_RegisterAllCheckpoints(string checkpointDefinitionsJsonArray)
 		{
-			//try
-			//{
-				//var cdja = JsonConvert.DeserializeObject<CheckpointDefinition[]>(checkpointDefinitionsJsonArray);
-				//cdja.All((cp) =>
-				//{
-					//CheckpointDefinition cpd = JsonConvert.DeserializeObject<CheckpointDefinition>(cp.ToString());
-					//cp.CreateCheckpoint();
-					//return true;
-				//});
-			//} 
-			//catch(Exception e)
-			//{
-				//throw new ArgumentException("EventHandler was called with a JSON string which did not contain valid CheckpointDefinitions", "checkpointDefinitionsJsonArray", e);
-			//}
+			try
+			{
+				var cdja = JsonConvert.DeserializeObject<UGC.CheckpointDefinition[]>(checkpointDefinitionsJsonArray);
+				cdja.All((cp) =>
+				{
+					UGC.CheckpointDefinition cpd = JsonConvert.DeserializeObject<UGC.CheckpointDefinition>(cp.ToString());
+					cp.CreateCheckpoint();
+					return true;
+				});
+			}
+			catch (Exception e)
+			{
+				throw new ArgumentException("EventHandler was called with a JSON string which did not contain valid CheckpointDefinitions", "checkpointDefinitionsJsonArray", e);
+			}
 
-			//Debug.WriteLine($"checkpoints are: {checkpointDefinitionsJsonArray}");
+			Debug.WriteLine($"checkpoints are: {checkpointDefinitionsJsonArray}");
 		}
 
 		[Command("spawnnow")] // DEBUG

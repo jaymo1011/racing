@@ -106,8 +106,6 @@ namespace racing.Server
 					return null;
 				}));
 			}
-
-			TriggerEvent("onMapParsed");
 		}
 
 		public void RegisterDirective(string key, MapDirective directive)

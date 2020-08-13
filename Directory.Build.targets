@@ -1,7 +1,7 @@
 <Project Condition=" '$(BuildingInsideVisualStudio)' == 'true' ">
 	
 	<PropertyGroup>
-		<FXResourceRoot>$(SolutionDir)\dist\racing</FXResourceRoot>
+		<FXResourceRoot>$(SolutionDir)dist\racing</FXResourceRoot>
 		<FXResourceProjectDir>$(FXResourceRoot)\$(ProjectName)</FXResourceProjectDir>
 	</PropertyGroup>
 
@@ -33,7 +33,7 @@
 			<ClientLibraries Include="$(FXResourceProjectDir)\*.dll;$(FXResourceProjectDir)\*.xml" Exclude="$(FXResourceProjectDir)\*.net.dll" />
 		</ItemGroup>
 
-		<Move SourceFiles="@(ClientLibraries)" DestinationFolder="$(FXResourceRoot)" />
+		<Move SourceFiles="@(ClientLibraries)" DestinationFolder="$(FXResourceRoot)" OverwriteReadOnlyFiles="true" />
 	</Target>
 	
 </Project>

@@ -8,10 +8,25 @@ using static CitizenFX.Core.Native.API;
 
 namespace racing
 {
+	public static class HudColour
+	{
+		public static Color Get(int hudColourIndex)
+		{
+			int r = 0;
+			int g = 0;
+			int b = 0;
+			int a = 0;
+			GetHudColour(hudColourIndex, ref r, ref g, ref b, ref a);
+			return Color.FromArgb(a, r, g, b);
+		}
+	}
+
 	public static partial class UGC
 	{
-		public static int[] CheckpointBaseColour = { 254, 235, 169, 255 }; //GetHudColour(13);
-		public static int[] CheckpointConeColour = { 93, 182, 229, 255 }; //GetHudColour(134);
+		//public static int[] CheckpointBaseColour = { 254, 235, 169, 255 }; //GetHudColour(13);
+		//public static int[] CheckpointConeColour = { 93, 182, 229, 255 }; //GetHudColour(134);
+		public static Color CheckpointBaseColour = HudColour.Get(13);
+		public static Color CheckpointConeColour = HudColour.Get(134);
 
 		static bool GetPropSpeedModificationParameters(int model, int prpsba, out int speedUp, out float duration)
 		{
@@ -116,102 +131,91 @@ namespace racing
 			}
 		}
 
-		public struct PropDefinition
+		public static List<PropDefinition> GetPropDefinitions(this Map map)
 		{
-			public float Heading;
-			public Vector3 Location;
-			public int Model;
-			public Vector3 Rotation;
-			public int EntityLODDist;
-			public bool HasSpeedModifier;
-			public int SpeedAmount;
-			public float SpeedDuration;
-			public int TextureVariant;
+			if (!map.GetObject("mission.prop").ContainsKeys("no", "loc", "model", "head", "vRot"))
+				throw new ArgumentException("The current map is missing required keys for props (no, loc, head, model, vRot)", "map");
 
-			/*
-			public PropDefinition(Vector3 l, Vector3 r, float h, int m, int texVariant, int prplod, int prpsba)
-			{
-				Heading = h;
-				Location = l;
-				Model = m;
-				Rotation = r;
-				EntityLODDist = prplod;
-				HasSpeedModifier = GetPropSpeedModificationParameters(m, prpsba, out SpeedAmount, out SpeedDuration);
-				TextureVariant = texVariant;
-			}
-			*/
-		}
+			List<PropDefinition> props = new List<PropDefinition>();
 
-		public static List<PropDefinition> GetPropDefinitions(JObject pd)
-		{
-			// Fail real quick if we've been given invalid data
-			if (!pd.ContainsKeys("no", "loc", "model", "head", "vRot"))
-				throw new ArgumentException("Given prop data is missing required keys for props (no, loc, head, model, vRot)", "propData");
+			int numProps = map.Get<int>("mission.prop.no");
 
-			// This is VERY ugly but, I'll fix it eventually
-			// See, now its "fixed" but maybe I could automate this?
-			var propDefinitions = new List<PropDefinition>();
+			List<Vector3> location = map.GetList<Vector3>("mission.prop.loc");
+			List<Vector3> rotation = map.GetList<Vector3>("mission.prop.vRot");
+			List<float> heading = map.GetList<float>("mission.prop.head");
+			List<int> model = map.GetList<int>("mission.prop.model");
 
-			var numProps = (int)pd["no"];
-
-			var location = pd.TryGetArray("loc");
-			var rotation = pd.TryGetArray("vRot");
-			var heading = pd.TryGetArray("head");
-			var model = pd.TryGetArray("model");
-			var textureVariant = pd.TryGetArray("prpclr", pd.TryGetArray("prpclc")); //var hasTextureVariant = (textureVariant != missingData);
-			var lodDistance = pd.TryGetArray("prplod"); //var hasLodDistance = (lodDistance != missingData);
-			var speedAdjustment = pd.TryGetArray("prpsba"); //var hasSpeedAdjustment = (speedAdjustment != missingData);
+			List<int> prpclc = map.GetList<int>("mission.prop.prpclc");
+			List<int> prpclr = map.GetList<int>("mission.prop.prpclr");
+			List<int> textureVariation = prpclc != null ? prpclc : prpclr;
+			List<int> lodDistance = map.GetList<int>("mission.prop.prplod");
+			List<int> speedAdjust = map.GetList<int>("mission.prop.prpsba");
 
 			for (int i = 0; i < numProps; i++)
 			{
 				PropDefinition prop = new PropDefinition();
 
-				prop.Location =			(Vector3)	location?[i].ToVector3();
-				prop.Heading =			(float)		heading?[i];
-				prop.Model =			(int)		model?[i];
-				prop.Rotation =			(Vector3)	rotation?[i].ToVector3();
-				prop.EntityLODDist =	(int)		lodDistance?[i];
-				prop.HasSpeedModifier =	(bool)		GetPropSpeedModificationParameters(prop.Model, (int)speedAdjustment?[i], out prop.SpeedAmount, out prop.SpeedDuration);
-				prop.TextureVariant =	(int)		textureVariant?[i];
+				prop.Location = location[i];
+				prop.Heading = heading[i];
+				prop.Model = model[i];
+				prop.Rotation = rotation[i];
 
-				propDefinitions.Add(prop);
+				prop.EntityLODDist = (int)(lodDistance?[i]);
+				prop.HasSpeedModifier = GetPropSpeedModificationParameters(prop.Model, (int)(speedAdjust?[i]), out prop.SpeedAmount, out prop.SpeedDuration);
+				prop.TextureVariant = (int)(textureVariation?[i]);
+
+				props.Add(prop);
 			}
 
-			return propDefinitions;
+			return props;
 		}
+
+		/*
+		public PropDefinition(Vector3 l, Vector3 r, float h, int m, int texVariant, int prplod, int prpsba)
+		{
+			Heading = h;
+			Location = l;
+			Model = m;
+			Rotation = r;
+			EntityLODDist = prplod;
+			HasSpeedModifier = GetPropSpeedModificationParameters(m, prpsba, out SpeedAmount, out SpeedDuration);
+			TextureVariant = texVariant;
+		}
+		*/
+		//}
 
 		public static async Task<List<Prop>> CreateProps(this List<PropDefinition> propDefinitions)
-		{
-			var propList = new List<Prop>();
-
-			foreach (PropDefinition propDefinition in propDefinitions)
 			{
-				// Lets make a prop!
-				var model = new Model(propDefinition.Model);
-				if (!await model.Request(2000))
-					continue;
+				var propList = new List<Prop>();
 
-				var newProp = new Prop(CreateObjectNoOffset((uint)model.Hash, propDefinition.Location.X, propDefinition.Location.Y, propDefinition.Location.Z, false, true, false));
-				FreezeEntityPosition(newProp.Handle, true);
-				newProp.Heading = propDefinition.Heading;
-				//newProp.Rotation = propDefinition.Rotation;
-				SetEntityRotation(newProp.Handle, propDefinition.Rotation.X, propDefinition.Rotation.Y, propDefinition.Rotation.Z, 2, false);
-
-				if (propDefinition.TextureVariant > -1)
-					SetObjectTextureVariant(newProp.Handle, propDefinition.TextureVariant);
-				if (propDefinition.EntityLODDist > -1)
-					SetEntityLodDist(newProp.Handle, propDefinition.EntityLODDist);
-				if (propDefinition.HasSpeedModifier)
+				foreach (PropDefinition propDefinition in propDefinitions)
 				{
-					if (propDefinition.SpeedAmount > -1)
-						SetObjectStuntPropSpeedup(newProp.Handle, propDefinition.SpeedAmount);
-					if (propDefinition.SpeedDuration > -1)
-						SetObjectStuntPropDuration(newProp.Handle, propDefinition.SpeedDuration);
-				}
-			}
+					// Lets make a prop!
+					var model = new Model(propDefinition.Model);
+					if (!await model.Request(2000))
+						continue;
 
-			return propList;
-		}
+					var newProp = new Prop(CreateObjectNoOffset((uint)model.Hash, propDefinition.Location.X, propDefinition.Location.Y, propDefinition.Location.Z, false, true, false));
+					FreezeEntityPosition(newProp.Handle, true);
+					newProp.Heading = propDefinition.Heading;
+					//newProp.Rotation = propDefinition.Rotation;
+					SetEntityRotation(newProp.Handle, propDefinition.Rotation.X, propDefinition.Rotation.Y, propDefinition.Rotation.Z, 2, false);
+
+					if (propDefinition.TextureVariant > -1)
+						SetObjectTextureVariant(newProp.Handle, propDefinition.TextureVariant);
+					if (propDefinition.EntityLODDist > -1)
+						SetEntityLodDist(newProp.Handle, propDefinition.EntityLODDist);
+					if (propDefinition.HasSpeedModifier)
+					{
+						if (propDefinition.SpeedAmount > -1)
+							SetObjectStuntPropSpeedup(newProp.Handle, propDefinition.SpeedAmount);
+						if (propDefinition.SpeedDuration > -1)
+							SetObjectStuntPropDuration(newProp.Handle, propDefinition.SpeedDuration);
+					}
+				}
+
+				return propList;
+			}
 
 		public static Checkpoint CreateCheckpoint(this CheckpointDefinition checkpointDef)
 		{
@@ -225,9 +229,9 @@ namespace racing
 			// Will probably be changed with other data
 			var cylinderHeight = 9.5f;
 
-			int checkpointHandle = CitizenFX.Core.Native.API.CreateCheckpoint(type, position.X, position.Y, position.Z, target.X, target.Y, target.Z, radius, CheckpointBaseColour[0], CheckpointBaseColour[1], CheckpointBaseColour[2], CheckpointBaseColour[3], 0);
+			int checkpointHandle = CitizenFX.Core.Native.API.CreateCheckpoint(type, position.X, position.Y, position.Z, target.X, target.Y, target.Z, radius, CheckpointBaseColour.R, CheckpointBaseColour.G, CheckpointBaseColour.B, CheckpointBaseColour.A, 0);
 			SetCheckpointCylinderHeight(checkpointHandle, cylinderHeight, cylinderHeight, cylinderRadius);
-			SetCheckpointIconRgba(checkpointHandle, CheckpointConeColour[0], CheckpointConeColour[1], CheckpointConeColour[2], CheckpointConeColour[3]);
+			SetCheckpointIconRgba(checkpointHandle, CheckpointConeColour.R, CheckpointConeColour.G, CheckpointConeColour.B, CheckpointConeColour.A);
 			if (!checkpointDef.IsRound)
 			{
 				float groundZ = World.GetGroundHeight(new Vector3(position.X, position.Y, position.Z + 1f));
@@ -252,6 +256,19 @@ namespace racing
 			}
 
 			return new Checkpoint(checkpointHandle);
+		}
+
+		public static async Task Load(this Map map)
+		{
+			// Generate all new props (first, in case of errors and stuff)
+			List<PropDefinition> props = map.GetPropDefinitions();
+
+			// Delete all old props
+			foreach (Prop prop in Client.ClientMain.LoadedProps)
+				prop.Delete();
+
+			// Create all new props
+			Client.ClientMain.LoadedProps = await CreateProps(props);
 		}
 	}
 }

@@ -125,6 +125,20 @@ namespace racing
 			}*/
 		}
 
+		[Serializable]
+		public struct PropDefinition
+		{
+			public float Heading;
+			public Vector3 Location;
+			public int Model;
+			public Vector3 Rotation;
+			public int EntityLODDist;
+			public bool HasSpeedModifier;
+			public int SpeedAmount;
+			public float SpeedDuration;
+			public int TextureVariant;
+		}
+
 		public class Map
 		{
 			public JObject Data { get; internal set; }

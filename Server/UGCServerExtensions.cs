@@ -15,7 +15,7 @@ namespace racing
 		};
 
 		// 
-		public static List<CheckpointDefinition> GetCheckpointDefinitionsFromMap(Map map)
+		public static List<CheckpointDefinition> GetCheckpointDefinitions(this Map map)
 		{
 			// Fail real quick if we've been given invalid data
 			if (map.GetObject("mission.race")?.ContainsKeys("chp", "chh", "chl") != true)
@@ -37,36 +37,6 @@ namespace racing
 				newCheckpoint.Location = location[i] + checkpointPositionOffset[newCheckpoint.IsRound ? "round" : "normal"];
 				newCheckpoint.Heading = heading[i];
 				newCheckpoint.Scale = scale[i];
-
-				checkpointDefinitions.Add(newCheckpoint);
-			}
-
-			return checkpointDefinitions;
-		}
-
-
-		public static List<CheckpointDefinition> GetCheckpointDefinitions(JObject rd)
-		{
-			// Fail real quick if we've been given invalid data
-			if (!rd.ContainsKeys("chp", "chh", "chl"))
-				throw new ArgumentException("Given race data is missing required keys for checkpoints (chp, chh, chl)", "rd");
-
-			var checkpointDefinitions = new List<CheckpointDefinition>();
-
-			var numCheckpoints = (int)rd["chp"];
-
-			var heading =	rd.TryGetArray("chh");
-			var location =	rd.TryGetArray("chl");
-			var scale =		rd.TryGetArray("chs"); //var hasScale = (scale != missingData);
-			var isRound =	rd.TryGetArray("rndchk"); //var hasRoundFlag = (isRound != missingData);
-
-			for (int i = 0; i < numCheckpoints; i++)
-			{
-				var newCheckpoint = new CheckpointDefinition();
-				newCheckpoint.IsRound =		(bool)		isRound?[i];
-				newCheckpoint.Location =	(Vector3)	location?[i].ToVector3() + checkpointPositionOffset[newCheckpoint.IsRound ? "round" : "normal"];
-				newCheckpoint.Heading =		(float)		heading?[i];
-				newCheckpoint.Scale =		(float)		scale?[i];
 
 				checkpointDefinitions.Add(newCheckpoint);
 			}

@@ -13,7 +13,11 @@ namespace racing.Server
 	{
 		static readonly HttpClient httpClient = new HttpClient();
 
-		UGC.Map CurrentMap;
+		/// <summary>
+		/// The current map as a <see cref="UGC.Map"/> or, if there is no map loaded, <see langword="null" />.
+		/// </summary>
+		UGC.Map CurrentMap = null;
+		string CurrentMapName = null;
 
 		public ServerMain()
 		{
@@ -24,6 +28,14 @@ namespace racing.Server
 			MapManager.Instance.Value.RegisterKeyDirective("ugc_file");
 			MapManager.Instance.Value.RegisterKeyDirective("ugc_data");
 
+			// Add the connected tag to all players already connected to the server
+			foreach (Player player in Players)
+			{
+				Debug.WriteLine($"{player.Name} has connected.");
+				player.AddTag("connected");
+			}
+				
+
 			//Debug.WriteLine("attempting some ugc parsing");
 			//parsedRace = ParseUGC(UGCExample.json);
 			//
@@ -33,11 +45,26 @@ namespace racing.Server
 			//Debug.WriteLine($"here's what we got :\n{JsonConvert.SerializeObject(props)}");
 		}
 
-		[EventHandler("onMapParsed")]
-		async void OnMapParsed()
+		[EventHandler("onMapStart")]
+		void OnMapStart(string mapName)
 		{
-			await Delay(200); // Wait some time to ensure map directives have actually been collected
+			CurrentMapName = mapName;
+		}
 
+		[EventHandler("onServerResourceStart")]
+		void OnServerResourceStart(string resourceName)
+		{
+			// Detect when the current map has started by using this event rather than onMapStart.
+			// This ensures that map directives have been fully processed before we start looking for them.
+			//string currentMapName = Exports["mapmanager"].getCurrentMap();
+		
+			if (CurrentMapName == resourceName)
+				OnMapParsed(CurrentMapName);
+		}
+
+		// Yes, this will have an await for ugc_url stuff, just not right now!
+		void OnMapParsed(string mapName)
+		{
 			string ugcJsonString = null;
 
 			IEnumerable<dynamic> UGCDataEntries = MapManager.Instance.Value.GetDirectives("ugc_data");
@@ -55,7 +82,6 @@ namespace racing.Server
 				var UGCFileEntries = MapManager.Instance.Value.GetDirectives("ugc_file");
 				if (UGCFileEntries.Any())
 				{
-					string mapName = Exports["mapmanager"].getCurrentMap();
 					foreach (string entry in UGCFileEntries)
 					{
 						var fileContent = API.LoadResourceFile(mapName, entry);
@@ -71,15 +97,55 @@ namespace racing.Server
 			if (ugcJsonString != null)
 			{
 				CurrentMap = new UGC.Map(ugcJsonString);
-				Debug.WriteLine($"Mission rule sample: {JsonConvert.SerializeObject(CurrentMap.GetObject("mission.rule"))}");
-				//List<Vector3> spawnLocations = CurrentMap["veh"].;
-				foreach (Player p in Players)
+				Debug.WriteLine($"MissionJSON sample: {JsonConvert.SerializeObject(CurrentMap.GetObject("mission.rule"))}");
+
+				foreach (Player p in Players.WithTag("connected"))
 				{
-					p.TriggerEvent("racing:changeActiveMap", CurrentMap.Json);
+					p.AddTag("map:loading");
+					p.TriggerEvent("racing:loadMissionJSON", CurrentMap.Json);
 				}
 			}
 		}
 
+		[EventHandler("onMapStop")]
+		void OnMapStop()
+		{
+			foreach (Player p in Players.WithTag("connected"))
+			{
+				p.RemoveTag("map:loaded");
+			}
+		}
+
+		[EventHandler("playerJoining")]
+		void OnPlayerJoining([FromSource] Player source)
+		{
+			source.AddTag("connected");
+			Debug.WriteLine($"{source.Name} has connected.");
+		}
+
+		[EventHandler("clientMapStarted")]
+		void OnClientMapStarted([FromSource] Player source)
+		{
+			Debug.WriteLine($"{source.Name}'s map has started");
+
+			// Other things we want to do on connect like send over the JSON
+			if (CurrentMap != null)
+			{
+				source.AddTag("map:loading");
+				source.TriggerEvent("racing:loadMissionJSON", CurrentMap.Json);
+			}
+				
+		}
+
+		[EventHandler("racing:onClientMapLoaded")]
+		void OnClientMapLoaded([FromSource] Player source)
+		{
+			Debug.WriteLine($"{source.Name} has placed props");
+			// Other things we want to do on connect like send over the JSON
+			source.RemoveTag("map:loading");
+			source.AddTag("map:loaded");
+			//source.TriggerEvent("racing:");
+		}
 
 		[EventHandler("onResourceStop")]
 		void OnResourceStop(string resourceName)
@@ -131,15 +197,16 @@ namespace racing.Server
 			{
 				//List<Vector3> spawnLocations = (List<Vector3>)((List<Object>)CurrentMap?["veh"]?["loc"]?["cuck cuck cuck uck"]).Cast<Vector3>();
 				//List<float> spawnHeadings = (List<float>)((List<object>)CurrentMap?["race"]?["veh"]?["head"]).Cast<float>();
-
-				var spawnLocations = CurrentMap.GetList<Vector3>("race.veh.loc");
-				var spawnHeadings = CurrentMap.GetList<float>("race.veh.head");
-				List<UGC.CheckpointDefinition> checkpointDefinitions = UGC.GetCheckpointDefinitionsFromMap(CurrentMap);
-				string checkpointString = JArray.FromObject(checkpointDefinitions).ToString();
+				Debug.WriteLine("LETS RACE");
+				var spawnLocations = CurrentMap.GetList<Vector3>("mission.veh.loc");
+				var spawnHeadings = CurrentMap.GetList<float>("mission.veh.head");
+				//List<UGC.CheckpointDefinition> checkpointDefinitions = CurrentMap.GetCheckpointDefinitions();
+				//string checkpointString = JArray.FromObject(checkpointDefinitions).ToString();
 				int plyCount = 0;
 				// Need to make a vehicle for all players and then set them into it
 				foreach (Player player in Players)
 				{
+					Debug.WriteLine($"cmon, {player.Name}, lets do this!");
 					//player.TriggerEvent("PlacePropsFromUGC", UGCExample.json);
 					//player.TriggerEvent("debug_RegisterAllCheckpoints", checkpointString);
 					var veh = World.CreateVehicle("nero", spawnLocations[plyCount], 0f); // Everyone gets a nero!

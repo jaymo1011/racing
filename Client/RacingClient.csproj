@@ -10,7 +10,6 @@
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<RepositoryUrl>https://github.com/jaymo1011/racing</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PlatformTarget>x64</PlatformTarget>
 		<AssemblyName>RacingClient.net</AssemblyName>
 	</PropertyGroup>
 
@@ -19,12 +18,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CitizenFX.Core.Client" Version="1.0.2797" />
+		<PackageReference Include="CitizenFX.Core.Client" Version="1.0.2830" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="12.0.3">
-			<ExcludeAssets>compile</ExcludeAssets>
-			<GeneratePathProperty>true</GeneratePathProperty>
-		</PackageReference>
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.2" ExcludeAssets="Compile" GeneratePathProperty="true" />
 		<Reference Include="Newtonsoft.Json">
 			<HintPath>$(PkgNewtonsoft_Json)\lib\portable-net40+sl5+win8+wp8+wpa81\Newtonsoft.Json.dll</HintPath>
 		</Reference>
