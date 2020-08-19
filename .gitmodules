@@ -1,0 +1,3 @@
+[submodule "mission-json-loader"]
+	path = mission-json-loader
+	url = https://github.com/jaymo1011/mission-json-loader

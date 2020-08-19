@@ -3,7 +3,7 @@ game 'gta5'
 
 resource_type 'gametype' { name = 'Racing' }
 
-dependency 'missionjsonloader'
+dependency 'mission-json-loader'
 
 loadscreen_manual_shutdown 'yes'
 
