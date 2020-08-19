@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<style>
+			* {
+				background-color: #222;
+				color: #ccc;
+				font-family: Arial, Helvetica, sans-serif
+			}
+
+			main {
+				margin-left: calc(2% + 3px);
+			}
+
+			.loadingBarContainer {
+				position: fixed;
+				top: 80%;
+				left: 50%;
+				-webkit-transform: translate(-50%, -80%);
+				transform: translate(-50%, -80%);
+				border: solid 3px white;
+				border-radius: 6px;
+				width: 94%;
+			}
+			.loadingBar {
+				height: 25px;
+			}
+			.loadingBar .bar {
+				animation: rainbow 15s ease infinite;
+				background-size: 1200% 1200%;
+				transition: background-image 1.3s ease-in;
+			}
+
+			.loadingBar .bar.moving {
+				background-image: linear-gradient(238deg, #fd8800, #fd008f #9700fd, #003dfd) !important;
+			}
+			.loadingBar .bar.finished {
+				background-image: linear-gradient(238deg,#00ff7b, #2da567) !important;
+			}
+			@-webkit-keyframes rainbow {
+				0% { background-position: 0% 50% }
+				50% { background-position: 100% 50% }
+				100% { background-position: 0% 50% }
+			}
+			@keyframes rainbow {
+				0% { background-position: 0% 50% }
+				50% { background-position: 100% 50% }
+				100% { background-position: 0% 50% }
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>
+				HELLO!
+			</h1>
+			<h2>
+				I am a very basic loading screen...
+			</h2>
+			<p>
+				The game should be loading soon enough and into the cloud screen too!<br>
+				Hopefully... You should probably check the console to see if everything is actually working as intended!
+				wow!
+			</p>
+		</main>
+		
+		<div class="loadingBarContainer" id="barContainer"></div>
+
+		<script type="text/javascript" src="nanobar.min.js"></script>
+		<!--<script src="nui://game/ui/jquery.js" type="text/javascript"></script>-->
+		<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+		<script>
+			var options = {
+				classname: 'loadingBar',
+				target: document.getElementById('barContainer')
+			};
+
+			var nanobar = new Nanobar(options);
+
+			var currentProgressStatus = "standing";
+			var changeProgressStatus = function(newStatus) {
+				var loadingBar = $(".loadingBar").find(".bar")
+				// Hack for the transitions
+				loadingBar.css("background", loadingBar.css("background"));
+				loadingBar.removeClass(currentProgressStatus)
+				loadingBar.addClass(newStatus);
+				currentProgressStatus = newStatus;			
+			}
+
+			window.addEventListener('message', function(e) {
+				if (e.data.eventName == "loadProgress") {
+					var thisLoadFraction = parseFloat(e.data.loadFraction)
+					nanobar.go(thisLoadFraction*100);
+					changeProgressStatus(thisLoadFraction >= 1.0 ? "finished" : "moving");
+				}
+
+				if (e.data.eventName == "mapLoading") {
+					console.log("lets go!!!!!");
+				}
+			});
+
+			nanobar.go(0);
+		</script>
+	</body>
+</html>

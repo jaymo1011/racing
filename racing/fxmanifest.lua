@@ -3,14 +3,23 @@ game 'gta5'
 
 resource_type 'gametype' { name = 'Racing' }
 
-file 'Newtonsoft.Json.dll'
-file 'Newtonsoft.Json.xml'
+dependency 'missionjsonloader'
 
-client_script 'RacingClient/*.net.dll'
-server_script 'RacingServer/*.net.dll'
+loadscreen_manual_shutdown 'yes'
 
---dependency 'ugcloader'
+loadscreen 'loadscreen/loadscreen.html'
+file 'loadscreen/*.*'
+
+client_scripts {
+	-- Helpers and stuff go here
+
+	"client-main.lua",
+}
+
+server_scripts {
+	"server-main.lua",
+}
 
 author 'Jaymo'
-version '0.0.1'
+version '0.0.3'
 description 'Racing gamemode for FiveM. Very much a WIP for now.'

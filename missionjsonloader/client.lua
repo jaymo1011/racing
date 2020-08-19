@@ -1,7 +1,5 @@
--- Hook into map directives! This makes it very fun and easy to implement a map loader directly from maps.
--- As for just a singular map though, we'll constantly re-load the same one and it will always come from the server but oh well..
-
 local loadedUGC = {}
+local firstMapLoad = true
 
 local function Vector3FromTable(arr)
 	return vec3(arr.x, arr.y, arr.z)
@@ -85,18 +83,23 @@ end
 
 local function LoadUGC(ugc)
 	-- I'll add a spinner lib at some point
+	--[[
 	BeginTextCommandBusyString("STRING")
         AddTextComponentSubstringPlayerName("Loading Map Objects")
 	EndTextCommandBusyString(2)
+	]]
 
-	print("loading UGC file...")
+	-- Set the flag so the server knows we're loading stuff right now.
+	LocalPlayer.state:set("MissionJSONLoaded", false, true)
+
+	print("Loading UGC...")
 
 	ugc.objects = {}
 
-	local missionData = ugc.data["mission"]
+	local missionData = ugc.data["mission"] or false
 	if not missionData then error("UGC does not contain a mission array!") end
 
-	local objectData = missionData["prop"]
+	local objectData = missionData["prop"] or false
 	if not objectData then return end -- this is the only time we will fail silently.
 
 	-- Common Data
@@ -160,9 +163,10 @@ local function LoadUGC(ugc)
 		end
 	end
 
-	TriggerServerEvent("UGCMapLoaded")
+	print("Done loading UGC!")
 end
 
+--[[ Thanks GlobalState!!!
 RegisterNetEvent("UGCLoader:LoadFromRetrievedData")
 AddEventHandler("UGCLoader:LoadFromRetrievedData", function(resource, ugcData)
 	-- This would be a shame!
@@ -176,7 +180,7 @@ AddEventHandler("UGCLoader:LoadFromRetrievedData", function(resource, ugcData)
 
 	-- Call the loader function
 	LoadUGC(loadedUGC[resource])
-end)
+end)]]
 
 local function UnloadUGC(ugc)
 	if ugc.objects then
@@ -187,34 +191,35 @@ local function UnloadUGC(ugc)
 end
 
 AddEventHandler("onClientMapStart", function(resource)
-	if GetNumResourceMetadata(resource, "ugc_file") > 0 then
-		print("oh hello! thats a UGC file!!!!!")
-		local noError, errMsg = pcall(function()
-			-- we only allow one ugc_file per resource (but multiple resource with UGC can be loaded!), I'll add support for more in the future if that's required!
-			local filePath = GetResourceMetadata(resource, "ugc_file", 0)
-			local fileData = LoadResourceFile(resource, filePath)
-			local ugcData = json.decode(fileData)
-
-			-- Ensure that if we were just restarted that the previous UGC is fully unloaded
-			if loadedUGC[resource] then
-				UnloadUGC(loadedUGC[resource])
-				loadedUGC[resource] = nil
-			end
-
-			-- Save the data to be able to unload it later
-			loadedUGC[resource] = {data = ugcData}
-
-			-- Call the loader function
-			LoadUGC(loadedUGC[resource])
-		end)
-
-		if not noError then
-			print(string.format("Error parsing UGC file: %s", errMsg))
-		end
+	-- If the map was just restarted globally and the server hasn't checked if it has MissionJSON then just wait for it to do so (or timeout)
+	if not GlobalState.CurrentMapMissionJSONChecked then
+		local CheckForMissionJSONTimeout = GetGameTimer() + GetConvarInt("missionJsonLoader_clientLoadTimeout", 10000)
+		while CheckForMissionJSONTimeout > GetGameTimer() and not GlobalState.CurrentMapMissionJSONChecked do Wait(500) end
 	end
+
+	-- If the current map actually has nothing to do with MissionJSON, don't bother doing anything...
+	if not SeemsLikeValidMissionJSON(GlobalState.CurrentMapMissionJSON) then return end
+
+	-- Well, if we've made this this far, this is almost certainly MissionJSON, lets parse it!
+	loadedUGC[resource] = {data = ParseMissionJSON(GlobalState.CurrentMapMissionJSON)}
+
+	-- And now we load it! (if it worked correctly)
+	LoadUGC(loadedUGC[resource])
+
+	-- Then finally, we update the LocalPlayer state to tell the server we've loaded! (by setting the loaded map to the resource name so it doesn't get confused)
+	LocalPlayer.state:set("MissionJSONLoaded", resource, true)
+
+	-- DEBUG SPAWN MEMEING
+	local spawnLocation = Vector3FromTable(loadedUGC[resource].data["mission"]["race"]["scene"]) or vec3(345, 4842, -60)
+	exports["spawnmanager"]:spawnPlayer({
+		x = spawnLocation.x, y = spawnLocation.y, z = spawnLocation.z,
+		heading = 39.3,
+		model = `a_m_y_skater_02`,
+	})
 end)
 
 AddEventHandler("onClientMapStop", function(resource)
+	-- If there is any loaded UGC, unload it
 	if loadedUGC[resource] then
 		UnloadUGC(loadedUGC[resource])
 		loadedUGC[resource] = nil
