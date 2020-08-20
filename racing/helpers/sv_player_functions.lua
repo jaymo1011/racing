@@ -1,7 +1,20 @@
 --[[
 	Player Management Helpers
 ]]
+
+-- Globals
 Players = {}
+PlayerIntentRefreshFrequency = 500
+PlayerIntents = setmetatable({}, {
+	__index = function(t, k)
+		-- Return 0 for intents no one has
+		if type(k) == "string" then
+			return 0
+		end
+
+		return nil
+	end,
+})
 
 -- Gets Player object while also hydrating the player state with stuff we want to put in there
 local function GetPlayerWithHydratedState(playerId)
@@ -11,13 +24,13 @@ local function GetPlayerWithHydratedState(playerId)
 	-- Get the special Player object with the state bag wrapper.
 	local playerObject = Player(playerId)
 
-	-- We need access to this later but playerObject has a metamethod preventing new indexes so... we bypass it! :D
-	rawset(playerObject, "playerId", playerId)
-
 	-- We don't need to re-hydrate the player if they already have the state variables
 	if playerObject.state._RacingStateLoaded then return playerObject end
 
-	-- Setup our state variables (only one right now :P)
+	-- Save the players ID for later
+	playerObject.state.PlayerID = playerId -- TODO: block changing this with policy when policy becomes a thing
+
+	-- Set their intent as unknown
 	playerObject.state.RacingIntent = "unknown"
 
 	-- Set the hydrated flag
@@ -27,11 +40,17 @@ local function GetPlayerWithHydratedState(playerId)
 	return playerObject
 end
 
-RegisterNetEvent("onPlayerJoining") -- why isn't this already an "always safe" net event???
-AddEventHandler("onPlayerJoining", function()
-	local source = source; if not source then return end
+-- This sucks.
+-- I had originally hoped to already set state stuff while the player was loading but I guess that can't happen :(
+-- Now we rely on a client event, these are sad times.
+RegisterNetEvent("playerJoining")
+AddEventHandler("playerJoining", function()
+	local source = tostring(source); if not source then return end
 
-	-- table.insert isn't so bad here, this shouldn't happen too often
+	-- Touching a state bag directly as this event as fired will fail
+	-- We need to wait as some internal even handlers need to process first before state bags are registered
+	while GetPlayerPed(source) == 0 do Wait(100) end
+
 	table.insert(Players, GetPlayerWithHydratedState(source))
 end)
 
@@ -42,7 +61,8 @@ AddEventHandler("playerDropped", function()
 	-- Find the index of the dropped player in the Players table
 	local index = false
 	for i, ply in ipairs(Players) do
-		if rawget(ply, "playerId") == source then
+		-- Find which index contains the player in question
+		if ply.state.PlayerID == source then
 			index = i
 			break
 		end
@@ -55,19 +75,12 @@ AddEventHandler("playerDropped", function()
 	end
 end)
 
--- Player intents
-PlayerIntents = setmetatable({}, {
-	__index = function(t, k)
-		-- Return 0 for intents no one has
-		if type(k) == "string" then
-			return 0
-		end
+--[[
+	Player Intents
+]]
 
-		return nil
-	end,
-})
-
-function RefreshPlayerIntents()
+-- Player intents refresh
+local function RefreshPlayerIntents()
 	-- Clear all intents
 	for k in pairs(PlayerIntents) do
 		PlayerIntents[k] = 0
@@ -79,7 +92,7 @@ function RefreshPlayerIntents()
 		local thisPlayerIntent = playerObj.state.RacingIntent
 
 		-- Players can't have an intent when the current map isn't loaded for them
-		if not playerObj.state.MissionJSONLoaded == GlobalState.CurrentMap or type(thisPlayerIntent) ~= "string" then
+		if playerObj.state.MissionJSONLoaded ~= GlobalState.CurrentMap or type(thisPlayerIntent) ~= "string" then
 			thisPlayerIntent = "unknown"
 		end
 		
@@ -87,3 +100,16 @@ function RefreshPlayerIntents()
 		PlayerIntents[thisPlayerIntent] = PlayerIntents[thisPlayerIntent] + 1
 	end
 end
+
+-- Player Management Thread
+CreateThread(function()
+	-- Add all players already connected into the Players table
+	for i, plyId in ipairs(GetPlayers()) do
+		Players[i] = GetPlayerWithHydratedState(plyId)
+	end
+
+	while true do
+		Wait(PlayerIntentRefreshFrequency)
+		RefreshPlayerIntents()
+	end
+end)

@@ -29,10 +29,10 @@
 				height: 25px;
 			}
 			.loadingBar .bar {
-				animation: rainbow 15s ease infinite;
+				animation: rainbow 10s ease infinite;
 				background-size: 1200% 1200%;
 				transition: background-image 1.3s ease-in;
-				background-image: linear-gradient(238deg, #fd8800, #fd008f, #9700fd, #003dfd) !important;
+				background-image: linear-gradient(238deg, #fd008f, #9700fd) !important;
 			}
 
 			.loadingBar .bar.finished {
@@ -85,9 +85,9 @@
 				if (e.data.eventName == "loadProgress") {
 					var thisLoadFraction = parseFloat(e.data.loadFraction)
 					nanobar.go(thisLoadFraction*100);
-					if (thisLoadFraction >= 1.0) {
-						loadingBar.addClass("finished");
-					}
+					// if (thisLoadFraction >= 1.0) {
+						// loadingBar.addClass("finished");
+					// }
 				}
 
 				if (e.data.eventName == "mapLoading") {

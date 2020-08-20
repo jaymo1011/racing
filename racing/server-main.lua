@@ -2,22 +2,19 @@ CurrentResourceName = GetCurrentResourceName() -- Should just be left as "racing
 FeaturesAvailable = false
 MinPlayers = GetConvarInt("racing_minPlayers", 1)
 PlayerLoadingTimeout = GetConvarInt("racing_playerLoadingTimeout", 10000)
+CurrentMapUGC = false
 
 -- Feature availability checks
 if not Player or not Entity or not GlobalState then
 	error(CurrentResourceName.." can only run on server artifact >=2844")
 
 	-- 2844 includes
-	-- - Global, Entity and Player State Bags
-	-- - Entity Lockdown
-	-- - Server-side entity persistence and owning
+	--	Global, Entity and Player State Bags
+	-- 	Entity Lockdown
+	-- 	Server-side entity persistence and owning
 else
 	FeaturesAvailable = true
 end
-
---[[
-	As of now, all of racing's internally used state variables begin with "racing_" in after, normal camelCase follows
-]]
 
 --TODO: Create some sort of output wrapper with string.format and so on...
 printf("Setting up server state...")
@@ -30,61 +27,49 @@ GlobalState.RacingGamemodeState = "starting"
 
 printf("Server state setup done!")
 
-local function GetNumParticipatingPlayers(p)
-	local p = p or function() end
-	local num = 0
-
-	for _, playerObj in ipairs(Players) do
-		p("processing player")
-		p("player intent: ", playerObj.state.RacingIntent)
-		p("player map: ", playerObj.state.MissionJSONLoaded)
-		if playerObj.state.MissionJSONLoaded == GlobalState.CurrentMap and playerObj.state.RacingIntent == "participate" then
-			p("yay")
-			num = num + 1
-		end
-	end
-
-	return num
-end
-
-RegisterCommand("ply", function()
-	GetNumParticipatingPlayers(print)
-end)
-
 --[[
 	Main resource thread
 ]]
 CreateThread(function()
 	if not FeaturesAvailable then return end
-	
-	-- Add all players already connected into the Players table
-	for i, plyId in ipairs(GetPlayers()) do
-		Players[i] = GetPlayerWithHydratedState(plyId)
-	end
 
-	local playerLoadingMaxTimeout = false
+	local playerLoadingMaxTimeout = false -- TODO: add this back in...
 
-	-- All of our "OnTick" stuff
 	while true do
 		Wait(500)
 
-		RefreshPlayerIntents()
+		-- Custom threading things so that we don't poll a lot of things we shouldn't be
+		if RaceThreadActive then
+			-- Kill the race thread if we're not racing
+			if GlobalState.RacingGamemodeState ~= "racing" then
+				RaceThreadActive = false
+			end
+
+			if PlayerIntents["participate"] < MinPlayers then
+				GlobalState.RacingGamemodeState = "waiting"
+				RaceThreadActive = false
+			end
+
+			goto continue
+		end
 
 		if GlobalState.RacingGamemodeState == "starting" then
 			if GlobalState.CurrentMapMissionJSONChecked and GlobalState.CurrentMapMissionJSON then
-				GlobalState.RacingGamemodeState = "started"
-				printf("Gamemode Started!!!")
+				GlobalState.RacingGamemodeState = "waiting"
+				-- This is a good time to decode the MissionJSON
+				CurrentMapUGC = ParseMissionJSON(GlobalState.CurrentMapMissionJSON)
 				goto continue
 			end
-		elseif GlobalState.RacingGamemodeState == "started" then
-			-- If the connected players > ... ugh I'll finish this comment later
+		elseif GlobalState.RacingGamemodeState == "waiting" then
+			-- If the connected players and players who can participate are both greater than the minimum amount of players then start the race
 			if #Players >= MinPlayers and PlayerIntents["participate"] >= MinPlayers then
-				GlobalState.RacingGamemodeState = "race:lineup"
+				GlobalState.RacingGamemodeState = "racing"
 				goto continue
 			end
-		elseif GlobalState.RacingGamemodeState == "race:lineup" then
-			printf("now we drag everyone into the race, into their vehicles and then everyone is happy")
-			return
+		elseif GlobalState.RacingGamemodeState == "racing" then
+			printf("A race will now commence...")
+			CreateThread(RaceThreadFunction)
+			goto continue
 		end
 
 		::continue::

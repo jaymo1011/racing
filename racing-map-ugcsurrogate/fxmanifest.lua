@@ -1,6 +1,6 @@
 resource_type 'map' { gameTypes = { ['racing'] = true } }
 
-map "stunt-race.lua"
+map "map.lua"
 
 fx_version 'adamant'
 game 'gta5'

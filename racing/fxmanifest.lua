@@ -15,9 +15,11 @@ server_scripts {
 	"helpers/sh_*.lua",
 
 	-- Server helpers
+	"@mission-json-loader/MissionJSON.lua", -- So that we can decode the JSON on our end, not allowing clients to touch it
 	"helpers/sv_*.lua",
 
-	-- Server script
+	-- Server scripts
+	"server-racing-logic.lua",
 	"server-main.lua",
 }
 
@@ -28,7 +30,7 @@ client_scripts {
 	-- Client helpers
 	"helpers/cl_*.lua",
 
-	-- Client script
+	-- Client scripts
 	"client-main.lua",
 }
 
