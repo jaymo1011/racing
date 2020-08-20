@@ -10,14 +10,26 @@ loadscreen_manual_shutdown 'yes'
 loadscreen 'loadscreen/loadscreen.html'
 file 'loadscreen/*.*'
 
-client_scripts {
-	-- Helpers and stuff go here
+server_scripts {
+	-- Shared helpers
+	"helpers/sh_*.lua",
 
-	"client-main.lua",
+	-- Server helpers
+	"helpers/sv_*.lua",
+
+	-- Server script
+	"server-main.lua",
 }
 
-server_scripts {
-	"server-main.lua",
+client_scripts {
+	-- Shared helpers
+	"helpers/sh_*.lua",
+	
+	-- Client helpers
+	"helpers/cl_*.lua",
+
+	-- Client script
+	"client-main.lua",
 }
 
 author 'Jaymo'

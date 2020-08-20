@@ -32,19 +32,19 @@
 				animation: rainbow 15s ease infinite;
 				background-size: 1200% 1200%;
 				transition: background-image 1.3s ease-in;
+				background-image: linear-gradient(238deg, #fd8800, #fd008f, #9700fd, #003dfd) !important;
 			}
 
-			.loadingBar .bar.moving {
-				background-image: linear-gradient(238deg, #fd8800, #fd008f #9700fd, #003dfd) !important;
-			}
 			.loadingBar .bar.finished {
 				background-image: linear-gradient(238deg,#00ff7b, #2da567) !important;
 			}
+
 			@-webkit-keyframes rainbow {
 				0% { background-position: 0% 50% }
 				50% { background-position: 100% 50% }
 				100% { background-position: 0% 50% }
 			}
+			
 			@keyframes rainbow {
 				0% { background-position: 0% 50% }
 				50% { background-position: 100% 50% }
@@ -81,21 +81,13 @@
 
 			var nanobar = new Nanobar(options);
 
-			var currentProgressStatus = "standing";
-			var changeProgressStatus = function(newStatus) {
-				var loadingBar = $(".loadingBar").find(".bar")
-				// Hack for the transitions
-				loadingBar.css("background", loadingBar.css("background"));
-				loadingBar.removeClass(currentProgressStatus)
-				loadingBar.addClass(newStatus);
-				currentProgressStatus = newStatus;			
-			}
-
 			window.addEventListener('message', function(e) {
 				if (e.data.eventName == "loadProgress") {
 					var thisLoadFraction = parseFloat(e.data.loadFraction)
 					nanobar.go(thisLoadFraction*100);
-					changeProgressStatus(thisLoadFraction >= 1.0 ? "finished" : "moving");
+					if (thisLoadFraction >= 1.0) {
+						loadingBar.addClass("finished");
+					}
 				}
 
 				if (e.data.eventName == "mapLoading") {
