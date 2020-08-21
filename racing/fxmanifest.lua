@@ -29,9 +29,11 @@ client_scripts {
 	
 	-- Client helpers
 	"helpers/cl_*.lua",
+	--newtonmeme.json here
 
 	-- Client scripts
 	"client-main.lua",
+	--"ui/RaceUI.net.dll",
 }
 
 author 'Jaymo'
