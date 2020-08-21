@@ -27,14 +27,15 @@ local function GetPlayerWithHydratedState(playerId)
 	-- We don't need to re-hydrate the player if they already have the state variables
 	if playerObject.state._RacingStateLoaded then return playerObject end
 
+	-- Set the hydrated flag
+	playerObject.state._RacingStateLoaded = true
+
 	-- Save the players ID for later
 	playerObject.state.PlayerID = playerId -- TODO: block changing this with policy when policy becomes a thing
 
 	-- Set their intent as unknown
-	playerObject.state.RacingIntent = "unknown"
-
-	-- Set the hydrated flag
-	playerObject.state._RacingStateLoaded = true
+	-- It seems that this isn't needed, the whole "racing state" still is though.
+	--playerObject.state.RacingIntent = "unknown"
 
 	-- Return the object given from Player
 	return playerObject

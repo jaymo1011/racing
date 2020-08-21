@@ -2,6 +2,10 @@
 	Racing State Helper
 	Just a quick wrapper to make stuff that requires the racing state not look really stretchy and constantly nag the state bags
 
+	!IMPORTANT!
+	It seems that setting your own state bag before the server has breaks things too :(
+	Just when I thought things started to work out...
+
 	(might be renamed at some point because I don't know how I feel of the name "racing state")
 ]]
 
