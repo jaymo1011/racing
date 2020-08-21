@@ -33,7 +33,7 @@ client_scripts {
 
 	-- Client scripts
 	"client-main.lua",
-	--"ui/RaceUI.net.dll",
+	--"RaceUI.net.dll",
 }
 
 author 'Jaymo'
