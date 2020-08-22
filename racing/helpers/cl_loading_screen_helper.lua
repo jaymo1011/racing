@@ -1,4 +1,4 @@
-local loadingScreenHasShutDown = false
+local loadingScreenHasShutDown = not GetIsLoadingScreenActive()
 local _ShutdownLoadingScreenNui = ShutdownLoadingScreenNui
 
 function InvokeLoadingScreenEvent(eventName)
