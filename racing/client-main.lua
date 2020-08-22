@@ -1,43 +1,43 @@
-local firstSpawn = true
-
-AddEventHandler("onMissionJSONLoading", function()
-	if not firstSpawn then return end
-
-	InvokeLoadingScreenEvent("mapLoading")
-end)
-
--- Add an event to handle new maps being loaded
-AddEventHandler("onMissionJSONLoaded", function()
-	-- This is NOT how we will be spawning players and stuff, this is just for testing!
-	-- We'll do a lot more in terms of contextual things, intention based indication of loading, etc.
-
-	if not firstSpawn then return end
-
-	InvokeLoadingScreenEvent("mapLoaded")
-
-	if not GlobalState.CurrentMapUGC then return end
-
-	local loadedUGCData = GlobalState.CurrentMapUGC.data
-	local spawnLocation = loadedUGCData.mission.race.scene or false; spawnLocation = spawnLocation and vec3(spawnLocation.x, spawnLocation.y, spawnLocation.z) or vec3(345, 4842, -60)
+local function SpawnPlayer()
 	exports["spawnmanager"]:spawnPlayer({
-		x = spawnLocation.x, y = spawnLocation.y, z = spawnLocation.z,
+		x = 2270.815,
+		y = 3756.9,
+		z = 38.5,	
 		heading = 39.3,
 		model = `a_m_y_skater_02`,
 	}, function()
 		OnStateAvailable(function()
-			-- yes, you will participate, you get no other option :D
+			-- we'll wait for the player to set their own intent now :(
 			LocalPlayer.state:set("RacingIntent", "participate", true)
-		end)
-
-		-- Tell the loading screen to fade out to the game view
-		InvokeLoadingScreenEvent("fadeOut")
 		
-		-- Just a little extra to account for the message time
-		Wait(600)
+			-- Tell the loading screen to fade out to the game view
+			InvokeLoadingScreenEvent("fadeOut")
+			
+			-- Just a little extra to account for the message time
+			Wait(600)
 
-		-- Shutdown the loading screen frame as we no longer need it
-		ShutdownLoadingScreenNui()
+			-- Shutdown the loading screen frame as we no longer need it
+			ShutdownLoadingScreenNui()
+		end)
 	end)
+end
 
-	firstSpawn = false
+
+AddEventHandler("onMissionJSONLoading", function()
+	InvokeLoadingScreenEvent("mapLoading")
+end)
+
+AddEventHandler("onMissionJSONLoaded", function()
+	InvokeLoadingScreenEvent("mapLoaded")
+
+	-- Only ever trigger on the first load
+	if GetEntityModel(PlayerPedId()) == `player_zero` then
+		SpawnPlayer()
+	end
+end)
+
+-- DEBUG: just makes things easier for now without the intent picker
+RegisterCommand("intent", function(_, args, raw)
+	local newIntent = args[1] and tostring(args[1]) or "participate" --"unknown"  
+	LocalPlayer.state:set("RacingIntent", newIntent, true)
 end)

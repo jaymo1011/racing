@@ -75,3 +75,8 @@ CreateThread(function()
 		::continue::
 	end
 end)
+
+AddEventHandler("onMapStop", function()
+	-- The map stopped, time to go back to the starting phase
+	GlobalState.RacingGamemodeState = "starting"
+end)

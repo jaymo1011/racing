@@ -22,31 +22,18 @@ local function GetPlayerWithHydratedState(playerId)
 	playerId = tostring(playerId) or false; if not playerId then return end
 
 	-- Get the special Player object with the state bag wrapper.
-	local playerObject = Player(playerId)
-
-	-- We don't need to re-hydrate the player if they already have the state variables
-	if playerObject.state._RacingStateLoaded then return playerObject end
+	local player = Player(playerId)
 
 	-- Set the hydrated flag
-	playerObject.state._RacingStateLoaded = true
-
-	-- Save the players ID for later
-	playerObject.state.PlayerID = playerId -- TODO: block changing this with policy when policy becomes a thing
-
-	-- Set their intent as unknown
-	-- It seems that this isn't needed, the whole "racing state" still is though.
-	--playerObject.state.RacingIntent = "unknown"
+	player.state._RacingStateLoaded = true
 
 	-- Return the object given from Player
-	return playerObject
+	return player
 end
 
--- This sucks.
--- I had originally hoped to already set state stuff while the player was loading but I guess that can't happen :(
--- Now we rely on a client event, these are sad times.
 RegisterNetEvent("playerJoining")
 AddEventHandler("playerJoining", function()
-	local source = tostring(source); if not source then return end
+	local source = tonumber(source); if not source then return end
 
 	-- Touching a state bag directly as this event as fired will fail
 	-- We need to wait as some internal even handlers need to process first before state bags are registered
@@ -63,7 +50,7 @@ AddEventHandler("playerDropped", function()
 	local index = false
 	for i, ply in ipairs(Players) do
 		-- Find which index contains the player in question
-		if ply.state.PlayerID == source then
+		if tostring(ply.__data) == source then
 			index = i
 			break
 		end

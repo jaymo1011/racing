@@ -10,34 +10,18 @@ RaceThreadActive = false
 -- Locals
 local RacePlayers = false
 local RaceVehicles = false
-local EntitySpawnTimeout = 5000
 
 local function SetupRacePlayerTable()
 	RacePlayers = {}
 
-	for _, playerStateBag in ipairs(Players) do
+	for _, player in ipairs(Players) do
 		-- Only add players who intend to participate
-		if playerStateBag.RacingIntent ~= "participate" then 
-			table.insert(RacePlayers, {
-				-- We want to save this so that it's not expensive to index a lot
-				PlayerID = playerStateBag.state.PlayerID,
-				StateBag = playerStateBag,
-			})
+		if player.state.RacingIntent == "participate" then 
+			table.insert(RacePlayers, player)
 		end
 	end
 
-	printf("Collected all players for this race")
-end
-
--- TODO: move to separate helper
-local function OnEntityCreated(entity, callback)
-	local timeout = GetGameTimer() + EntitySpawnTimeout
-
-	CreateThread(function()
-		while not DoesEntityExist(entity) and timeout > GetGameTimer() do Wait(50) end
-
-		callback()
-	end)
+	printf("Collected all players for this race %s", json.encode(RacePlayers))
 end
 
 local function SetupRaceVehicles()
@@ -45,22 +29,42 @@ local function SetupRaceVehicles()
 	local vehSpawnHeading = CurrentMapUGC["mission"]["veh"]["head"]
 	RaceVehicles = {}
 
-	for i, ply in ipairs(RacePlayers) do
+	for i, player in ipairs(RacePlayers) do
 		-- DEBUG: this is nowhere near finished yet.
 		local vehLocation = vehSpawnLocation[i]; vehLocation = vec3(vehLocation.x, vehLocation.y, vehLocation.z)
 		local vehHeading = (tonumber(vehSpawnHeading[i]) or 0.0) + 0.0
-		local veh = CreateVehicle(`nero`, vehLocation, vehHeading, true, true) -- Yes, it IS a networked mission entity!
-		SetEntityHeading(veh, vehHeading)
-		OnEntityCreated(veh, function()
-			Entity(veh).state.OwningPlayer = ply.PlayerID
-			ply.StateBag.state.RaceVehicleNetworkId = veh
-			
-			local playerPed = GetPlayerPed(tonumber(ply.PlayerID))
-			SetEntityCoords(playerPed, vehLocation)
-			SetPedIntoVehicle(playerPed, veh, -1)
+	
+		CreateServerVehicle(`sultanrs`, vehLocation, vehHeading, true, function(vehicle) -- Yes, it IS a networked mission entity!	
+			local handle = vehicle.__data
+			local networkId = NetworkGetNetworkIdFromEntity(handle)
+			local playerPed = GetPlayerPed(player.__data)
+
+			vehicle.state.OwningPlayer = player.__data
+
+			vehicle.state.VehicleModProfile = {
+				vehicleMods = {
+					{
+						type = 48,
+						index = 7,
+					}
+				},
+
+				-- Any guesses what the livery is? ;)
+				numberPlateText = "WAIFU420"
+			}
+
+			player.state.RaceVehicleNetworkId = networkId
+
+			while GetVehiclePedIsIn(playerPed) ~= handle do
+				SetEntityCoords(playerPed, vehLocation)
+				SetPedIntoVehicle(playerPed, handle, -1)
+				Wait(500)
+			end
+
+			EnsureRaceVehicleHasCorrectMods(vehicle)
+
+			table.insert(RaceVehicles, handle)
 		end)
-		
-		table.insert(RaceVehicles, veh)
 	end
 end
 

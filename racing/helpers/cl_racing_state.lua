@@ -9,7 +9,7 @@
 	(might be renamed at some point because I don't know how I feel of the name "racing state")
 ]]
 
-local stateIsAvailable = LocalPlayer.state._RacingStateLoaded or false
+local stateIsAvailable = LocalPlayer.state._RacingStateLoaded
 local callbackQueue = {}
 
 if not stateIsAvailable then

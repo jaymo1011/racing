@@ -1,4 +1,4 @@
-local loadingScreenHasShutDown = not GetIsLoadingScreenActive()
+local loadingScreenHasShutDown = GetEntityModel(PlayerPedId()) ~= `player_zero` -- It seems like this works for the most part :D
 local _ShutdownLoadingScreenNui = ShutdownLoadingScreenNui
 
 function InvokeLoadingScreenEvent(eventName)
