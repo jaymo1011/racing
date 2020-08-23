@@ -8,7 +8,7 @@ local function SpawnPlayer()
 	}, function()
 		OnStateAvailable(function()
 			-- we'll wait for the player to set their own intent now :(
-			LocalPlayer.state:set("RacingIntent", "participate", true)
+			--LocalPlayer.state:set("RacingIntent", "participate", true)
 		
 			-- Tell the loading screen to fade out to the game view
 			InvokeLoadingScreenEvent("fadeOut")

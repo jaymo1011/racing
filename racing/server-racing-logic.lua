@@ -10,6 +10,7 @@ RaceThreadActive = false
 -- Locals
 local RacePlayers = false
 local RaceVehicles = false
+local RaceMap = false
 
 local function SetupRacePlayerTable()
 	RacePlayers = {}
@@ -25,13 +26,13 @@ local function SetupRacePlayerTable()
 end
 
 local function SetupRaceVehicles()
-	local vehSpawnLocation = CurrentMapUGC["mission"]["veh"]["loc"]
-	local vehSpawnHeading = CurrentMapUGC["mission"]["veh"]["head"]
+	local vehSpawnLocation = RaceMap["mission"]["veh"]["loc"]
+	local vehSpawnHeading = RaceMap["mission"]["veh"]["head"]
 	RaceVehicles = {}
 
 	for i, player in ipairs(RacePlayers) do
 		-- DEBUG: this is nowhere near finished yet.
-		local vehLocation = vehSpawnLocation[i]; vehLocation = vec3(vehLocation.x, vehLocation.y, vehLocation.z)
+		local vehLocation = vehSpawnLocation[i]
 		local vehHeading = (tonumber(vehSpawnHeading[i]) or 0.0) + 0.0
 	
 		CreateServerVehicle(`sultanrs`, vehLocation, vehHeading, true, function(vehicle) -- Yes, it IS a networked mission entity!	
@@ -77,7 +78,8 @@ function RaceThreadFunction()
 	SetupRacePlayerTable()
 
 	-- Ensure we have map data
-	if not CurrentMapUGC then error("some how, there was no UGC available for this race") end
+	if not GlobalState.CurrentMapUGC then error("some how, there was no UGC available for this race") end
+	RaceMap = GlobalState.CurrentMapUGC
 
 	-- Give everyone a vehicle and place them into it
 	SetupRaceVehicles()
@@ -92,4 +94,5 @@ function RaceThreadFunction()
 	-- Finally, we clean up the mess we made
 	RacePlayers = false
 	RaceVehicles = false -- TODO: clean up old vehicles
+	RaceMap = false
 end

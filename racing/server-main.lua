@@ -2,7 +2,6 @@ CurrentResourceName = GetCurrentResourceName() -- Should just be left as "racing
 FeaturesAvailable = false
 MinPlayers = GetConvarInt("racing_minPlayers", 1)
 PlayerLoadingTimeout = GetConvarInt("racing_playerLoadingTimeout", 10000)
-CurrentMapUGC = false
 
 -- Feature availability checks
 if not Player or not Entity or not GlobalState then
@@ -38,7 +37,7 @@ CreateThread(function()
 	while true do
 		Wait(500)
 
-		-- Custom threading things so that we don't poll a lot of things we shouldn't be
+		-- Custom threading things so that we don't poll a lot of things we shouldn't be all the time
 		if RaceThreadActive then
 			-- Kill the race thread if we're not racing
 			if GlobalState.RacingGamemodeState ~= "racing" then
@@ -49,30 +48,21 @@ CreateThread(function()
 				GlobalState.RacingGamemodeState = "waiting"
 				RaceThreadActive = false
 			end
-
-			goto continue
-		end
-
-		if GlobalState.RacingGamemodeState == "starting" then
-			if GlobalState.CurrentMapMissionJSONChecked and GlobalState.CurrentMapMissionJSON then
-				GlobalState.RacingGamemodeState = "waiting"
-				-- This is a good time to decode the MissionJSON
-				CurrentMapUGC = ParseMissionJSON(GlobalState.CurrentMapMissionJSON)
-				goto continue
+		else
+			if GlobalState.RacingGamemodeState == "starting" then
+				if GlobalState.CurrentMapMissionJSONChecked and GlobalState.CurrentMapUGC then
+					GlobalState.RacingGamemodeState = "waiting"
+				end
+			elseif GlobalState.RacingGamemodeState == "waiting" then
+				-- If the connected players and players who can participate are both greater than the minimum amount of players then start the race
+				if #Players >= MinPlayers and PlayerIntents["participate"] >= MinPlayers then
+					GlobalState.RacingGamemodeState = "racing"
+				end
+			elseif GlobalState.RacingGamemodeState == "racing" then
+				printf("A race will now commence...")
+				CreateThread(RaceThreadFunction)
 			end
-		elseif GlobalState.RacingGamemodeState == "waiting" then
-			-- If the connected players and players who can participate are both greater than the minimum amount of players then start the race
-			if #Players >= MinPlayers and PlayerIntents["participate"] >= MinPlayers then
-				GlobalState.RacingGamemodeState = "racing"
-				goto continue
-			end
-		elseif GlobalState.RacingGamemodeState == "racing" then
-			printf("A race will now commence...")
-			CreateThread(RaceThreadFunction)
-			goto continue
 		end
-
-		::continue::
 	end
 end)
 
