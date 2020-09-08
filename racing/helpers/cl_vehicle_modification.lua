@@ -80,7 +80,7 @@ AddEventHandler("racing:ensureVehicleMods", function()
 	local vehicle = Entity(vehicleHandle)
 
 	if vehicle.state.OwningPlayer ~= GetPlayerServerId(PlayerId()) then
-		printf("The server told us to set vehicle mods on a vehicle that we don't own! (%s ~= %s)", vehicle.state.OwningPlayer, PlayerId())
+		printf("The server told us to set vehicle mods on a vehicle that we don't own! (%s ~= %s)", vehicle.state.OwningPlayer, GetPlayerServerId(PlayerId()))
 		return
 	end
 

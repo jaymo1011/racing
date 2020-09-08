@@ -11,6 +11,8 @@ RaceThreadActive = false
 local RacePlayers = false
 local RaceVehicles = false
 local RaceMap = false
+local RaceCheckpoints = false
+local NumRaceCheckpoints = false
 
 local function SetupRacePlayerTable()
 	RacePlayers = {}
@@ -18,7 +20,7 @@ local function SetupRacePlayerTable()
 	for _, player in ipairs(Players) do
 		-- Only add players who intend to participate
 		if player.state.RacingIntent == "participate" then 
-			table.insert(RacePlayers, player)
+			table.insert(RacePlayers, {id = player.__data, stateBag = player})
 		end
 	end
 
@@ -35,18 +37,18 @@ local function SetupRaceVehicles()
 		local vehLocation = vehSpawnLocation[i]
 		local vehHeading = (tonumber(vehSpawnHeading[i]) or 0.0) + 0.0
 	
-		CreateServerVehicle(`sultanrs`, vehLocation, vehHeading, true, function(vehicle) -- Yes, it IS a networked mission entity!	
+		CreateServerVehicle(`zion3`, vehLocation, vehHeading, true, function(vehicle) -- Yes, it IS a networked mission entity!	
 			local handle = vehicle.__data
 			local networkId = NetworkGetNetworkIdFromEntity(handle)
-			local playerPed = GetPlayerPed(player.__data)
+			local playerPed = GetPlayerPed(player.id)
 
-			vehicle.state.OwningPlayer = player.__data
+			vehicle.state.OwningPlayer = player.id
 
 			vehicle.state.VehicleModProfile = {
 				vehicleMods = {
 					{
 						type = 48,
-						index = 7,
+						index = 5,
 					}
 				},
 
@@ -54,7 +56,8 @@ local function SetupRaceVehicles()
 				numberPlateText = "WAIFU420"
 			}
 
-			player.state.RaceVehicleNetworkId = networkId
+			player.stateBag.state.RaceVehicleNetworkId = networkId
+			player.raceVehicle = handle
 
 			while GetVehiclePedIsIn(playerPed) ~= handle do
 				SetEntityCoords(playerPed, vehLocation)
@@ -67,6 +70,37 @@ local function SetupRaceVehicles()
 			table.insert(RaceVehicles, handle)
 		end)
 	end
+end
+
+local function SetPlayerCheckpoint(player, index, playSound)
+	if not RaceCheckpoints then return end
+
+	-- TODO: lap races!!!!
+	if player.checkpoints == NumRaceCheckpoints then
+		print("we have a bloody winner!!", GetPlayerName(player.id))
+	end
+
+	local chp = RaceCheckpoints[index]
+
+	if chp then
+		player.checkpoint = index
+		player.triggerLocation1 = chp.location
+		player.triggerRadius1 = chp.radius -- We're generous :P
+		player.triggerLocation2 = chp.isPair and chp.pairLocation or false
+		player.triggerRadius2 = chp.isPair and chp.pairRadius or false
+		TriggerClientEvent("racing:checkpoints:setIndex", player.id, index, playSound)
+	end
+end
+
+local function IsPlayerInTrigger(player, location, radius)
+	if player and location and radius then
+		local vehicle = player.raceVehicle
+		if not vehicle or not DoesEntityExist(vehicle) then return false end
+
+		return #(GetEntityCoords(vehicle).xy - location.xy) <= radius
+	end
+
+	return false
 end
 
 function RaceThreadFunction()
@@ -83,16 +117,39 @@ function RaceThreadFunction()
 
 	-- Give everyone a vehicle and place them into it
 	SetupRaceVehicles()
+
+	-- uhh checkpoints maybe???
+	RaceCheckpoints = GetRaceCheckpoints(RaceMap.mission.race)
+	NumRaceCheckpoints = #RaceCheckpoints -- Why continuously calculate something that will never change?!
+
+	--local clientCheckpointData
+	--RaceCheckpoints, clientCheckpointData = GetRaceCheckpoints(RaceMap.mission.race)
+	for _, player in ipairs(RacePlayers) do
+		-- Checkpoint 2 is the first checkpoint as checkpoint 1 is the "starting line"
+		SetPlayerCheckpoint(player, 2, false)
+	end
 	
 	-- And now start the loop for the race
 	while true do Wait(0)
 		if not RaceThreadActive then return end
 
-		-- Player Checkpointy checky things
+		for _, player in ipairs(RacePlayers) do
+			if IsPlayerInTrigger(player, player.triggerLocation1, player.triggerRadius1) or IsPlayerInTrigger(player, player.triggerLocation2, player.triggerRadius2) then
+				SetPlayerCheckpoint(player, player.checkpoint + 1, true)
+			end
+		end
 	end
 
 	-- Finally, we clean up the mess we made
 	RacePlayers = false
 	RaceVehicles = false -- TODO: clean up old vehicles
 	RaceMap = false
+	RaceCheckpoints = false
+	NumRaceCheckpoints = false
 end
+
+RegisterCommand("clearChp", function(source)
+	TriggerClientEvent("racing:receiveCheckpointUpdate", source, json.encode({
+		cleared = true,
+	}))
+end)

@@ -9,20 +9,68 @@
 	(might be renamed at some point because I don't know how I feel of the name "racing state")
 ]]
 
-local stateIsAvailable = LocalPlayer.state._RacingStateLoaded
-local callbackQueue = {}
+--[[
+	(Local) Player
+]]
 
-if not stateIsAvailable then
+PlayerStateAvailable = LocalPlayer.state._RacingStateLoaded
+local playerStateCallbackQueue = {}
+
+if not PlayerStateAvailable then
 	CreateThread(function()
 		while not LocalPlayer.state._RacingStateLoaded do Wait(200) end
-		for _,cb in ipairs(callbackQueue) do cb() end
+		PlayerStateAvailable = true
+		for _,cb in ipairs(playerStateCallbackQueue) do cb() end
 	end)
 end
 
 function OnStateAvailable(func)
-	if stateIsAvailable then
+	if PlayerStateAvailable then
 		func()
 	else
-		table.insert(callbackQueue, func)
+		table.insert(playerStateCallbackQueue, func)
 	end
 end
+
+--[[
+	Map
+]]
+
+CurrentMapAvailable = GlobalState.CurrentMapUGC and true or false
+
+local function resetCurrentMapHelpers()
+	CurrentMapUGC = false
+
+	CurrentMapMissionData = false
+
+	CurrentMapRaceData = false
+end
+
+local function populateCurrentMapHelpers()
+	CurrentMapUGC = GlobalState.CurrentMapUGC
+
+	CurrentMapMissionData = CurrentMapUGC["mission"]
+
+	if CurrentMapMissionData then
+		CurrentMapRaceData = CurrentMapMissionData["race"]
+	end
+end
+
+if CurrentMapAvailable then
+	populateCurrentMapHelpers()
+else
+	resetCurrentMapHelpers()
+end
+
+AddEventHandler("onClientMapStart", function(resource)
+	CurrentMapAvailable = GlobalState.CurrentMapUGC and true or false
+
+	if not CurrentMapAvailable then
+		resetCurrentMapHelpers()
+	end
+end)
+
+AddEventHandler("onMissionJSONLoaded", function()
+	populateCurrentMapHelpers()
+	CurrentMapAvailable = true
+end)
