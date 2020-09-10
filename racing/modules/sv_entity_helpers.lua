@@ -47,7 +47,7 @@ end)
 
 -- Delete all of our own entities when the gametype stops
 AddEventHandler("onGameTypeStop", function(gametype)
-	-- Should literally never happen, that's while we'll warn about it!
+	-- Should literally never happen, that's why we'll warn about it!
 	if gametype ~= GetCurrentResourceName() then
 		printf("The current gametype should be %s but %s was just stopped?!", GetCurrentResourceName(), gametype)
 	end

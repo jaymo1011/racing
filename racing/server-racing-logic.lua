@@ -20,11 +20,22 @@ local function SetupRacePlayerTable()
 	for _, player in ipairs(Players) do
 		-- Only add players who intend to participate
 		if player.state.RacingIntent == "participate" then 
-			table.insert(RacePlayers, {id = player.__data, stateBag = player})
+			table.insert(RacePlayers, {id = tonumber(player.__data), stateBag = player})
 		end
 	end
 
 	printf("Collected all players for this race %s", json.encode(RacePlayers))
+end
+
+local function GetRacePlayerFromIndex(index)
+	index = tonumber(index)
+	for _, player in ipairs(RacePlayers) do
+		if player.id == index then
+			return player
+		end
+	end
+
+	return false
 end
 
 local function SetupRaceVehicles()
@@ -85,9 +96,14 @@ local function SetPlayerCheckpoint(player, index, playSound)
 	if chp then
 		player.checkpoint = index
 		player.triggerLocation1 = chp.location
-		player.triggerRadius1 = chp.radius -- We're generous :P
 		player.triggerLocation2 = chp.isPair and chp.pairLocation or false
+
+		-- The intention is that the client will visibly kill the checkpoint before we do as we will trigger on the centre point of the vehicle (not on model bounds)
+		-- It also seems that checkpoint "radius" in incorrectly named as it's actually the **diameter** if the checkpoint!
+		-- For our actual radius, that would make it half of the checkpoint "radius"
+		player.triggerRadius1 = chp.radius
 		player.triggerRadius2 = chp.isPair and chp.pairRadius or false
+
 		TriggerClientEvent("racing:checkpoints:setIndex", player.id, index, playSound)
 	end
 end
@@ -103,11 +119,22 @@ local function IsPlayerInTrigger(player, location, radius)
 	return false
 end
 
+RegisterNetEvent("racing:checkpoints:trigger")
+AddEventHandler("racing:checkpoints:trigger", function()
+	local player = GetRacePlayerFromIndex(source)
+
+	if not player then return end
+
+	if IsPlayerInTrigger(player, player.triggerLocation1, player.triggerRadius1) or IsPlayerInTrigger(player, player.triggerLocation2, player.triggerRadius2) then
+		SetPlayerCheckpoint(player, player.checkpoint + 1, true)
+	end
+end)
+
 function RaceThreadFunction()
 	-- There can only be one race function at a time, do nothing if there is already one active
 	if RaceThreadActive then return end
 	RaceThreadActive = true
-
+	
 	-- We need to finalise who's participating in this race and who's not.
 	SetupRacePlayerTable()
 
@@ -119,6 +146,7 @@ function RaceThreadFunction()
 	SetupRaceVehicles()
 
 	-- uhh checkpoints maybe???
+	TriggerClientEvent("racing:checkpoints:clear", -1)
 	RaceCheckpoints = GetRaceCheckpoints(RaceMap.mission.race)
 	NumRaceCheckpoints = #RaceCheckpoints -- Why continuously calculate something that will never change?!
 
@@ -132,12 +160,6 @@ function RaceThreadFunction()
 	-- And now start the loop for the race
 	while true do Wait(0)
 		if not RaceThreadActive then return end
-
-		for _, player in ipairs(RacePlayers) do
-			if IsPlayerInTrigger(player, player.triggerLocation1, player.triggerRadius1) or IsPlayerInTrigger(player, player.triggerLocation2, player.triggerRadius2) then
-				SetPlayerCheckpoint(player, player.checkpoint + 1, true)
-			end
-		end
 	end
 
 	-- Finally, we clean up the mess we made

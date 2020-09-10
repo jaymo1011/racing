@@ -15,7 +15,6 @@ else
 	FeaturesAvailable = true
 end
 
---TODO: Create some sort of output wrapper with string.format and so on...
 printf("Setting up server state...")
 
 -- Set lockdown mode to strict
@@ -69,4 +68,12 @@ end)
 AddEventHandler("onMapStop", function()
 	-- The map stopped, time to go back to the starting phase
 	GlobalState.RacingGamemodeState = "starting"
+end)
+
+AddEventHandler("onGameTypeStop", function()
+	-- We're being stopped, reset anything that we changed globally!
+	Citizen.InvokeNative(`SET_SYNC_ENTITY_LOCKDOWN_MODE`, "inactive") -- If only there were a getter for this, we just have to assume it was inactive
+	TriggerEvent("racing:shutdown")
+	TriggerClientEvent("racing:shutdown", -1)
+	-- TODO: clean up global and player state (I guess with some sort of registry system)
 end)

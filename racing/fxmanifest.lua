@@ -11,12 +11,12 @@ loadscreen 'loadscreen/loadscreen.html'
 file 'loadscreen/*.*'
 
 server_scripts {
-	-- Shared helpers
-	"helpers/sh_*.lua",
+	-- Shared modules
+	"modules/sh_*.lua",
 
-	-- Server helpers
+	-- Server modules
 	"@mission-json-loader/MissionJSON.lua", -- So that we can decode the JSON on our end, not allowing clients to touch it
-	"helpers/sv_*.lua",
+	"modules/sv_*.lua",
 
 	-- Server scripts
 	"server-racing-logic.lua",
@@ -24,11 +24,11 @@ server_scripts {
 }
 
 client_scripts {
-	-- Shared helpers
-	"helpers/sh_*.lua",
+	-- Shared modules
+	"modules/sh_*.lua",
 	
-	-- Client helpers
-	"helpers/cl_*.lua",
+	-- Client modules
+	"modules/cl_*.lua",
 	--newtonmeme.json here
 
 	-- Client scripts
@@ -37,5 +37,5 @@ client_scripts {
 }
 
 author 'Jaymo'
-version '0.0.3'
+version '0.0.4'
 description 'Racing gamemode for FiveM. Very much a WIP for now.'
